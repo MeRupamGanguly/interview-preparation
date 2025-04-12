@@ -114,6 +114,7 @@ Redis track the IP and Request counts. After a certain number of request with a 
 
 ```go
 func checkRateLimit(ip string, limit int, window int) bool {
+   // ip := strings.Split(r.RemoteAddr, ":")[0]
     key := fmt.Sprintf("rate_limit:%s", ip)
     count, err := rdb.Incr(ctx, key).Result()
     if err != nil {

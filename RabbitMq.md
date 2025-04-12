@@ -1,6 +1,6 @@
 # RabbitMQ
 
-Imagine You (the publisher) send a marriage invitation (message) to the post office (exchange). The post office (exchange) looks at the Address (routing key) and decides which Flat (queue) should get the invitation. The Flat (queue) keeps the invitation until someone (the consumer) comes to read it.
+Imagine You (the publisher) send a marriage invitation (message) to the post office (exchange). The post office (exchange) looks at the Address (routing key) and decides which Flat's PostBox (queue) should get the invitation. The Flat's PostBox (queue) keeps the invitation until someone (the consumer) comes to read it.
 
 The fundamental goal is to decouple producers and consumers, enabling asynchronous and reliable message processing. In RabbitMQ, an exchange is a routing mechanism that receives messages from producers (publishers) and routes them to one or more queues based on certain rules or bindings.  The publisher sends messages to an exchange (not directly to a queue).
 

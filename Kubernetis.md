@@ -1,10 +1,18 @@
 # Kubernetes 
+
 Kubernetes is designed for automate the process of deploying, scaling, and managing containerized applications.  Kubernetes uses YAML files to define resources.
 
 A Pod can contain one or more containers that share the same network, namespace and storage.
-Containers in the same Pod share a common IP address and port space. They can communicate with each other using localhost and the same port numbers. Pods can communicate with each other using their IP addresses and defined ports. Pods are often managed by higher-level controllers like Deployments, ReplicaSets, which handle scaling, updates, and ensuring that the desired number of Pod replicas are running.
 
-ReplicaSet is a controller that ensures a specified number of identical Pods are running at any given time.   If a Pod fails or is deleted, the ReplicaSet creates a new Pod to replace it. A ReplicaSet uses a label selector to identify which Pods it should manage. The selector matches Pods based on their labels, and the ReplicaSet ensures that the Pods with these labels are created or deleted as needed.
+Within a POD multiple containers share the Same IP and Ports, and they can comunicate with each other with localhost.
+
+Multiple PODs are comunicate using IP address not Localhost. 
+
+Pods are often managed by higher-level controllers like Deployments, ReplicaSets, which handle scaling, updates, and ensuring that the desired number of Pod replicas are running.
+
+ReplicaSet is a controller that ensures a specified number of identical Pods are running at any given time.   If a Pod fails or is deleted, the ReplicaSet creates a new Pod to replace it.
+
+ReplicaSet uses a label selector to identify which Pods it should manage. The selector matches Pods based on their labels, and the ReplicaSet ensures that the Pods with these labels are created or deleted as needed.
 
 Services provide a stable endpoint(DNS name and IP address) for accessing a set of Pods. This stable endpoint is crucial because Pods can come and go due to scaling, updates, or failures, but Services provide a consistent way to access these Pods.
 
@@ -29,8 +37,6 @@ Deployments support rolling updates, allowing you to update your application wit
 If a new update causes issues, you can roll back to a previous version of your application. Kubernetes maintains a history of revisions, making it easy to revert to a stable state.
 Deployments allow you to scale the number of replicas (Pods) up or down easily.
 
-
-Kubernetes uses a flat network model where every Pod gets its own IP address. Pods communicate directly with each other using their IP addresses, 
 
 Cluster is a set of machines (nodes) that work together to run containerized applications. The cluster consists of a control plane(Master Node) and a set of worker nodes, and it provides the environment needed to deploy, manage, and scale applications.
 What are the main components of Kubernetes architecture?
