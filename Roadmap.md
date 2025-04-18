@@ -11,8 +11,15 @@ https://www.youtube.com/watch?v=QpLy0_c_RXk
 GRPC 
 
 
+SQL
+GRPC
+AWS
 
 
+AWS ECS
+
+RabbitMQ
+Channel 3 Pattern question
 
 
 

@@ -418,7 +418,7 @@ func main() {
 	wg.Wait()
 }
 ```
-Two goroutines generate even and odd numbers up to 30 and send them through their respective channels (evenCh and oddCh). The third goroutine prints numbers alternately from these channels, ensuring the sequence. The sync.WaitGroup ensures that the program waits for all goroutines to finish before exiting.
+
 ```go
 package main
 
@@ -500,7 +500,82 @@ func main() {
 	fmt.Println("All goroutines have finished.")
 }
 ```
+# Concurent File Read and Write
+```go
+package main
 
+import (
+	"fmt"
+	"log"
+	"os"
+	"sync"
+	"time"
+)
+
+func FileWriter(ch <-chan string, filename string, wg *sync.WaitGroup, mu *sync.RWMutex) {
+	defer wg.Done()
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	for line := range ch {
+		mu.Lock()
+		_, err = f.WriteString(line + "\n")
+		mu.Unlock()
+		if err != nil {
+			log.Fatal(err)
+		}
+		time.Sleep(time.Second)
+	}
+}
+func FileReader(filename string, interval time.Duration, wg *sync.WaitGroup, mu *sync.RWMutex) {
+	defer wg.Done()
+	for {
+		time.Sleep(interval)
+		mu.RLock()
+		d, err := os.ReadFile(filename)
+		mu.RUnlock()
+		if err != nil {
+			log.Println("error: ", err)
+			continue
+		}
+		log.Println("Reading: \n", string(d))
+	}
+}
+
+func main() {
+	filename := "log.txt"
+	ch := make(chan string, 100)
+
+	var wgR sync.WaitGroup
+	var wgW sync.WaitGroup
+	var mu sync.RWMutex
+
+	// Start writer goroutine
+	wgW.Add(1)
+	go FileWriter(ch, filename, &wgW, &mu)
+
+	// Start reader goroutine (reads every seconds)
+	wgR.Add(1)
+	go FileReader(filename, time.Second, &wgR, &mu)
+
+	// Simulate writing from multiple goroutines
+	for i := range 10 {
+		msg := fmt.Sprintf("Message from goroutine %d", i)
+		ch <- msg
+		time.Sleep(time.Second)
+	}
+
+	close(ch)
+	wgW.Wait()
+
+	// Optional: end reader after some time
+	time.Sleep(5 * time.Second)
+	fmt.Println("Done.")
+}
+```
+# Listener GoRoutine
 ```go
 package main
 

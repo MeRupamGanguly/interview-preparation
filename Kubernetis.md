@@ -80,3 +80,63 @@ charts/: A directory where dependent charts can be stored.
 README.md: Documentation about the chart.
 
 Helm can install, upgrade, rollback, and delete releases. Each release can be upgraded or rolled back independently of others.
+
+Docker compose is a command is use for Start/Up multiple seervices, networks and volumes with single command docker-compose up Docker compose uses a YAML file (docker-compose.yml) to configure these Services, Networks and Volumes.
+
+Prometheus is a monitoring and alerting toolkit used for recording real-time metrics
+Grafana is an open-source visualization tool that enables users to create interactive and customizable dashboards for monitoring and analyzing metrics.
+Prometheus uses service discovery mechanisms to automatically detect new instances as they scale up or down.
+Prometheus scrapes metrics directly from each instance, which requires each application to expose metrics on a specified endpoint.
+
+# DOCKER and KUBERNETIS Commands
+#  Dockerfile
+```bash
+# Use the official Golang image to build the app
+FROM golang:1.20 AS builder
+
+# Set the Current Working Directory inside the container
+WORKDIR /app
+
+# Copy the source code into the container
+COPY . .
+
+# Build the Go app
+RUN go build -o myapp
+
+# Start a new stage from scratch
+FROM alpine:latest
+
+# Set the Current Working Directory inside the container
+WORKDIR /root/
+
+# Copy the Pre-built binary file from the previous stage
+COPY --from=builder /app/myapp .
+
+# Expose port 8080 to the outside world
+EXPOSE 8080
+
+# Command to run the executable
+CMD ["./myapp"]
+```
+# Kubernetis file
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mydeployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: mycontainer
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+```
