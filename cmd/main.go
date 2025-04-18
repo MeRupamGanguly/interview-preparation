@@ -1,87 +1,41 @@
 package main
 
-import (
-	"bufio"
-	"fmt"
-	"log"
-	"os"
-	"strings"
-	"sync"
-	"time"
-)
+import "fmt"
 
-func commandListener(commands chan<- string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("Enter commands (on/off/exit):")
-
-	for scanner.Scan() {
-		cmd := strings.TrimSpace(scanner.Text())
-		commands <- cmd
-		if cmd == "exit" {
-			close(commands)
-			return
-		}
+// Function to find the maximum of two values
+func max(a, b int) int {
+	if a > b {
+		return a
 	}
+	return b
 }
 
-func startOnPrinter(stopChan <-chan bool, wg *sync.WaitGroup) {
-	defer wg.Done()
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
+// Function to find the length of the longest substring without repeating characters
+func lengthOfLongestSubstring(s string) int {
+	seen := make(map[byte]int) // Map to store the last index of each character
+	left, maxLen := 0, 0       // Initialize left pointer and maxLen to 0
 
-	for {
-		select {
-		case <-ticker.C:
-			fmt.Println("It is ON")
-		case <-stopChan:
-			return
-		}
-	}
-}
+	// Iterate through the string with the right pointer
+	for right := range len(s) {
+		ch := s[right] // Current character at the right pointer
 
-func commandHandler(commands <-chan string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var stopChan chan bool
-	var printWG sync.WaitGroup
-	isOn := false
-	for cmd := range commands {
-		switch cmd {
-		case "on":
-			if !isOn {
-				log.Println("Light is ON")
-				stopChan = make(chan bool)
-				printWG.Add(1)
-				go startOnPrinter(stopChan, &printWG)
-				isOn = true
-			}
-		case "off":
-			if isOn {
-				log.Println("Light is OFF")
-				stopChan <- true
-				printWG.Wait()
-				isOn = false
-			}
-		case "exit":
-			log.Println("Exiting...")
-			if isOn {
-				stopChan <- true
-				printWG.Wait()
-			}
-			return
-		default:
-			log.Println("Unknown command:", cmd)
+		// If the character is already seen and its index is within the current window
+		if _, ok := seen[ch]; ok && seen[ch] >= left {
+			left = seen[ch] + 1 // Move the left pointer right past the duplicate
 		}
+
+		// Update the last index of the character
+		seen[ch] = right
+
+		// Calculate the length of the current valid substring
+		maxLen = max(maxLen, right-left+1)
 	}
+
+	return maxLen // Return the length of the longest substring
 }
 
 func main() {
-	var wg sync.WaitGroup
-	commands := make(chan string)
-
-	wg.Add(2)
-	go commandListener(commands, &wg)
-	go commandHandler(commands, &wg)
-
-	wg.Wait()
+	s := "abcabcbb"                       // Example string
+	result := lengthOfLongestSubstring(s) // Call the function
+	fmt.Println("Length of longest substring without repeating characters:", result)
 }

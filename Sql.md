@@ -66,9 +66,9 @@ mydatabase=#
 ```
 
 # JOINS
-INNER JOIN : Returns only matching rows from both tables.
+1. INNER JOIN : Returns only matching rows from both tables.
 
-OUTER JOIN:
+2. OUTER JOIN:
 
     LEFT JOIN : Returns all rows from the left table, and matching rows from the right. If no match, NULLs for the right side.
 
@@ -76,7 +76,7 @@ OUTER JOIN:
 
     FULL JOIN : Returns all rows from both tables. If there's no match on either side, fills with NULLs.
 
-CROSS JOIN : Returns the Cartesian product – all combinations.
+3. CROSS JOIN : Returns the Cartesian product – all combinations.
 
 SELF JOIN : Joins a table to itself.
 
