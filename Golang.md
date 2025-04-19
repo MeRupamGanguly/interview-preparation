@@ -935,7 +935,7 @@ func main() {
 }
 ```
 
-# Patter Question
+# Pattern Question
 ```go
 
 /*

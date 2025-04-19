@@ -88,7 +88,6 @@ Grafana is an open-source visualization tool that enables users to create intera
 Prometheus uses service discovery mechanisms to automatically detect new instances as they scale up or down.
 Prometheus scrapes metrics directly from each instance, which requires each application to expose metrics on a specified endpoint.
 
-# DOCKER and KUBERNETIS Commands
 #  Dockerfile
 ```bash
 # Use the official Golang image to build the app

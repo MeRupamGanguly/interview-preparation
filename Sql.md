@@ -64,7 +64,183 @@ mydatabase=# INSERT INTO Orders (OrderID, UserID, ProductID) VALUES
 INSERT 0 3
 mydatabase=# 
 ```
+# FUNCTIONS
 
+```bash
+mydatabase=# SELECT UPPER(username) AS USER,LOWER(username) AS user, LENGTH(username) AS Length,SUBSTRING(username,2,3) AS SS FROM Users;
+| user    | user    | length | ss  |
+|---------|---------|--------|-----|
+| ALICE   | alice   | 5      | lic |
+| BOB     | bob     | 3      | ob  |
+| CHARLIE | charlie | 7      | har |
+| DIANA   | diana   | 5      | ian |
+(4 rows)
+
+mydatabase=# SELECT UPPER(username) AS USER,LOWER(username) AS user, LENGTH(username) AS Length,SUBSTRING(username,2,5) AS SS FROM Users;
+| user    | user    | length | ss    |
+|---------|---------|--------|-------|
+| ALICE   | alice   | 5      | lice  |
+| BOB     | bob     | 3      | ob    |
+| CHARLIE | charlie | 7      | harli |
+| DIANA   | diana   | 5      | iana  |
+(4 rows)
+
+mydatabase=# SELECT userid, CONCAT(username,':',referrerid) AS reference FROM Users;
+| userid | reference   |
+|--------|-------------|
+| 1      | Alice:      |
+| 2      | Bob:1       |
+| 3      | Charlie:1   |
+| 4      | Diana:2     |
+
+mydatabase=# SELECT userid, REPLACE(username, 'i','j') AS relaced_name FROM Users;
+| userid | relaced_name |
+|--------|--------------|
+| 1      | Aljce        |
+| 2      | Bob          |
+| 3      | Charlje      |
+| 4      | Djana        |
+```
+
+- Removes leading/trailing spaces	TRIM(' hi ')
+- Removes leading spaces	LTRIM(' hi')
+- Removes trailing spaces	RTRIM('hi ')
+- Leftmost n chars	LEFT('hello', 2)
+- Rightmost n chars	RIGHT('hello', 2)
+- Repeats string n times	REPEAT('ha', 3)
+- Reverses string	REVERSE('abc')
+- Finds index of substring	POSITION('b' IN 'abc')
+- Position of substring	INSTR('abc', 'b')
+- Pattern match	'abc' LIKE 'a%'
+- Case-insensitive match	'abc' ILIKE 'A%'
+- Regex-like pattern	'abc' SIMILAR TO 'a%'
+- String formatting	FORMAT('Name: %s, Age: %s', 'Bob', 30)
+- ASCII code of first char	ASCII('A')
+- Char from ASCII code	CHR(65)
+
+```bash
+mydatabase=# CREATE TABLE employees (
+    emp_id INT PRIMARY KEY,
+    name VARCHAR(50),
+    department VARCHAR(50),
+    salary INT,
+    age INT,
+    active BOOLEAN
+);
+CREATE TABLE
+mydatabase=# INSERT INTO employees (emp_id, name, department, salary, age, active) VALUES
+(1, 'Alice', 'HR', 50000, 30, TRUE),
+(2, 'Bob', 'IT', 60000, 35, TRUE),
+(3, 'Charlie', 'IT', 55000, 28, FALSE),
+(4, 'Diana', 'HR', 52000, 40, TRUE),
+(5, 'Evan', 'Finance', 70000, 38, TRUE),
+(6, 'Frank', 'Finance', 67000, 45, FALSE);
+INSERT 0 6
+
+mydatabase=# SELECT * FROM employees;
+| emp_id | name    | department | salary | age | active |
+|--------|---------|------------|--------|-----|--------|
+| 1      | Alice   | HR         | 50000  | 30  | true   |
+| 2      | Bob     | IT         | 60000  | 35  | true   |
+| 3      | Charlie | IT         | 55000  | 28  | false  |
+| 4      | Diana   | HR         | 52000  | 40  | true   |
+| 5      | Evan    | Finance    | 70000  | 38  | true   |
+| 6      | Frank   | Finance    | 67000  | 45  | false  |
+
+``` bash
+mydatabase=# SELECT COUNT(*) FROM employees; # Total row count
+| count |
+|-------|
+| 6     |
+
+mydatabase=# SELECT AVG(age) FROM employees;
+|         avg         |
+|---------------------|
+| 36.0000000000000000
+(1 row)
+
+mydatabase=# SELECT ROUND(AVG(age),2) FROM employees;
+| round |
+|-------|
+| 36.00 |
+(1 row)
+
+mydatabase=# SELECT SUM(salary) FROM employees;
+  sum   
+--------
+ 354000
+(1 row)
+
+mydatabase=# SELECT MIN(salary) FROM employees;
+  min  
+-------
+ 50000
+(1 row)
+
+mydatabase=# SELECT MAX(salary) FROM employees;
+  max  
+-------
+ 70000
+(1 row)
+
+# ------------  GROUP BY  ------------
+
+mydatabase=# SELECT department FROM employees GROUP BY department;
+ department 
+------------
+ Finance
+ IT
+ HR
+(3 rows)
+
+mydatabase=# SELECT active FROM employees GROUP BY active;
+ active 
+--------
+ f
+ t
+(2 rows)
+
+mydatabase=# SELECT department, SUM(salary) FROM employees GROUP BY department;
+ department |  sum   
+------------+--------
+ Finance    | 137000
+ IT         | 115000
+ HR         | 102000
+(3 rows)
+
+mydatabase=# SELECT department, SUM(salary) AS total FROM employees GROUP BY department ORDER BY total;
+ department | total  
+------------+--------
+ HR         | 102000
+ IT         | 115000
+ Finance    | 137000
+(3 rows)
+
+mydatabase=# SELECT department, SUM(salary) AS total FROM employees GROUP BY department ORDER BY total desc;
+ department | total  
+------------+--------
+ Finance    | 137000
+ IT         | 115000
+ HR         | 102000
+(3 rows)
+
+# ------------  HAVING  ------------
+
+mydatabase=# SELECT department, SUM(salary) AS total FROM employees GROUP BY department HAVING SUM(salary)>110000;
+ department | total  
+------------+--------
+ Finance    | 137000
+ IT         | 115000
+(2 rows)
+
+mydatabase=# SELECT department, SUM(salary) AS total FROM employees GROUP BY department HAVING SUM(salary)>110000 AND SUM(salary)<120000;
+ department | total  
+------------+--------
+ IT         | 115000
+(1 row)
+
+
+```
 # JOINS
 1. INNER JOIN : Returns only matching rows from both tables.
 
