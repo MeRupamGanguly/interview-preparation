@@ -666,7 +666,7 @@ func main() {
 }
 
 ```
-### SOLID Principles:
+# SOLID Principles:
 SOLID priciples are guidelines for designing Code base that are easy to understand maintain and extend over time.
 
 Single Responsibility:- A Struct/Class should have only a single reason to change. Fields of Author shoud not placed inside Book Struct.
@@ -1022,3 +1022,38 @@ func binarySearch(slice []int, target int) int {
     return -1 // Target not found
 }
 ```
+# Status Code
+
+			200 OK: The request was successful, and the server returned the requested data.
+
+			201 Created: The request was successful, and as a result, a new resource was created (commonly used with POST).
+
+			202 Accepted: The request has been accepted for processing, but the processing is not complete.
+
+			400 Bad Request: The server could not understand the request due to invalid syntax.
+
+			401 Unauthorized: The client must authenticate itself to get the requested response (missing or invalid authentication credentials).
+
+			403 Forbidden: The server understood the request but refuses to authorize it (the client does not have permission).
+
+			404 Not Found: The server could not find the requested resource.
+
+			405 Method Not Allowed: The method specified in the request is not allowed for the resource.
+
+			406 Not Acceptable: The server cannot generate a response that is acceptable according to the Accept headers.
+
+			408 Request Timeout: The client did not send a request in time.
+
+			500 Internal Server Error: The server encountered an unexpected condition that prevented it from fulfilling the request.
+
+			501 Not Implemented: The server does not support the functionality required to fulfill the request.
+
+			502 Bad Gateway: The server, while acting as a gateway or proxy, received an invalid response from the upstream server.
+
+			503 Service Unavailable: The server is currently unable to handle the request (e.g., due to overload or maintenance).
+
+			504 Gateway Timeout: The server, while acting as a gateway or proxy, did not receive a timely response from the upstream server.
+
+			505 HTTP Version Not Supported: The server does not support the HTTP protocol version that was used in the request.
+
+			511 Network Authentication Required: The client needs to authenticate to gain network access.
