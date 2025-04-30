@@ -1,7 +1,11 @@
 
+# PATTERN 1 : TWO POINTERS
+
+![Image](https://github.com/user-attachments/assets/c527eb09-d83e-4ec8-9a75-82d1f02744d3)
+
 # A : TWO POINTERS
 
-Imagine We have a row of boxes (an array), and we want to look at two boxes at a time. Instead of using one finger to check  use two fingers (pointers) to move across the boxes from different directions. And yoweu move them closer or far to each other based on some rule. Reduces nested loops to single traversal.
+Imagine We have a row of boxes (an array), and we want to look at two boxes at a time. Instead of using one finger to check  use two fingers (pointers) to move across the boxes from different directions. And we move them closer or far to each other based on some rule. Reduces nested loops to single traversal.
 
 Ask ourself:
 
@@ -109,8 +113,74 @@ for right := 0; right < len(s); right++ {
     maxLen = max(maxLen, right-left+1)
 }
 ```
+## Constant Window :-
+![Image](https://github.com/user-attachments/assets/ba01305d-0a55-4e79-9dd5-8abfbf718acf)
 
-
+```go
+func main() {
+	arr := []int{12, 14, 15, 1, 16, 5, 13, 18}
+	log.Println("Array is ", arr)
+	w := 4
+	l := 0
+	r := w - 1
+	maxSum := 0
+	sum := func(a []int) int {
+		log.Println("Sum of ", a)
+		sum := 0
+		for i := range a {
+			sum = sum + a[i]
+		}
+		return sum
+	}
+	max := func(a, b int) int {
+		if a > b {
+			return a
+		} else {
+			return b
+		}
+	}
+	for r <= len(arr) {
+		s := sum(arr[l:r]) // This includes l, but excludes r. arr[4:8] → elements at indices 4,5,6,7 (last four). So need to iterate loop extra 1 time.
+		l++
+		r++
+		maxSum = max(maxSum, s)
+		log.Println("Sum is ", s)
+	}
+	log.Println("MAX SUM IS ", maxSum)
+}
+```
+```bash
+rupx@dev:~/Projects/interview-preparation/cmd$ go run main.go 
+2025/04/29 17:04:11 Array is  [12 14 15 1 16 5 13 18]
+2025/04/29 17:04:11 Sum of  [12 14 15]
+2025/04/29 17:04:11 Sum is  41
+2025/04/29 17:04:11 Sum of  [14 15 1]
+2025/04/29 17:04:11 Sum is  30
+2025/04/29 17:04:11 Sum of  [15 1 16]
+2025/04/29 17:04:11 Sum is  32
+2025/04/29 17:04:11 Sum of  [1 16 5]
+2025/04/29 17:04:11 Sum is  22
+2025/04/29 17:04:11 Sum of  [16 5 13]
+2025/04/29 17:04:11 Sum is  34
+2025/04/29 17:04:11 Sum of  [5 13 18]
+2025/04/29 17:04:11 Sum is  36
+2025/04/29 17:04:11 MAX SUM IS  41
+rupx@dev:~/Projects/interview-preparation/cmd$ go run main.go 
+2025/04/29 17:04:19 Array is  [12 14 15 1 16 15 13 18]
+2025/04/29 17:04:19 Sum of  [12 14 15]
+2025/04/29 17:04:19 Sum is  41
+2025/04/29 17:04:19 Sum of  [14 15 1]
+2025/04/29 17:04:19 Sum is  30
+2025/04/29 17:04:19 Sum of  [15 1 16]
+2025/04/29 17:04:19 Sum is  32
+2025/04/29 17:04:19 Sum of  [1 16 15]
+2025/04/29 17:04:19 Sum is  32
+2025/04/29 17:04:19 Sum of  [16 15 13]
+2025/04/29 17:04:19 Sum is  44
+2025/04/29 17:04:19 Sum of  [15 13 18]
+2025/04/29 17:04:19 Sum is  46
+2025/04/29 17:04:19 MAX SUM IS  46
+```
 
 
 
