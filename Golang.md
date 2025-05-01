@@ -1,5 +1,5 @@
 
-# Introduce Yourself:
+# Introduce ourself:
 
 I have Btech in IT, Started my Career at Sensibol as Golang Backend Developer. There my Primary role was Developing REST APIs and Microservices, Business logics, Bug Fixes etc. We use Golang Aws MySql Redis etc. After I joined Calsoft and worked with Extreme Network CLient where my primary role was Bug Fixes, Crate APIs, Write Unit and Functional Test cases, We use Same Golang RabbitMQ, SQL gRPC etc.
 
@@ -44,20 +44,57 @@ func main() {
     fmt.Println("New value of a:", a)   // Outputs: New value of a: 10
 }
 ```
-# Goroutine vs Thread:
-Goroutines are designed for concurrency, meaning multiple tasks can run using context switching. Threads are designed for parallelism, meaning multiple tasks can run simultaneously on multiple CPU cores.
+# Go-Routine vs Thread:
+Go-Routines are designed for concurrency, meaning multiple tasks can run using context switching. Threads are designed for parallelism, meaning multiple tasks can run simultaneously on multiple CPU cores.
 
-In context switching, imagine multiple tasks need to run at the same time. The Go runtime starts Task 1, and after some time, it pauses it and starts Task 2. After some time, it pauses Task 2 and can either start Task 3 or resume Task 1, and so on.
+In context switching, imagine multiple tasks need to run at the same time. The Go-Runtime starts Task 1, and after some time, it pauses it and starts Task 2. After some time, it pauses Task 2 and can either start Task 3 or resume Task 1, and so on.
 
-Goroutines have a dynamic stack size and are managed by the Go runtime. Threads have a fixed-size stack and are managed by the OS kernel.
+Go-Routines have a dynamic stack size and are managed by the Go-Runtime. Threads have a fixed-size stack and are managed by the OS kernel. This dynamic growth of Stack ensures that memory is used efficiently. As a result, thousands or even millions of Go-Routines can be created and run concurrently with minimal memory overhead. This fixed size stack means that even if the thread doesn’t need all that memory, the space is reserved. As a result, threads consume more memory, which limits how many threads can run concurrently on a system.
 
-The Go scheduler is responsible for deciding when and on which OS thread each goroutine runs. This allows Go to efficiently handle thousands (or more) of goroutines running concurrently.
+The Go scheduler is responsible for deciding when and on which OS-Thread each Go-Routine runs.
 
-In Go, when we run multiple goroutines (like mini-tasks), the Go runtime decides when each goroutine should run. By default, Go will let a goroutine keep running until it finishes or does something that allows other tasks to take over (like waiting for I/O or sleeping).
+When we start a Go-Routine using the `go` keyword, the Go-Runtime adds it to a Run-Queue. This Run-Queue is managed by a special component called a Logical-Processor. The Logical-Processor holds the queue of Go-Routines, manages their state, and helps with scheduling and garbage collection.
 
-However, sometimes you might want to force Go to give other goroutines a chance to run even if the current goroutine is still doing something. This is where runtime.Gosched() comes in. When you call runtime.Gosched(), it tells Go to stop the current goroutine for a moment and allow other goroutines to run if they need to. It doesn't stop your goroutine permanently, but just gives other tasks a chance to run before your goroutine continues.
+A Go-Routine waits in the Run-Queue until an OS-Thread picks it up for execution. Once picked, the Go-Routine starts running.
 
-runtime.GOMAXPROCS(n): This function sets the maximum number of CPUs that Go will use for running goroutines. By default, Go will use all available CPUs. This function allows you to limit it to n CPUs. runtime.NumCPU(): This function returns the number of CPUs available on the current machine.
+While running, a Go-Routine can: Be preempted: The runtime can pause it if it runs too long to give others a chance. or Pause itself: If it waits on I/O, channels, mutexes, or syscalls. or Yield: It can voluntarily give up the CPU to let other Go-Routines run.
+
+If a Go-Routine gets blocked (e.g., waiting for data), it enters a waiting state. The Go scheduler then detaches the current OS-Thread so the Logical-Processor can keep working using another thread.
+ 
+A Logical-Processor is tied to an OS-Thread, and a Logical-Processor can only run one goroutine at a time on a particular OS-Thread. So, if the OS-Thread is blocked, we can’t use the same thread to run another goroutine unless we assign a different OS-Thread to the Logical-Processor
+
+Once the blocking condition is resolved (like data is received), the Go-Routine is rescheduled and placed back into a Run-Queue to be picked up again.
+
+When a context switch happens (i.e., the runtime switches from one Go-Routine to another), Go saves the state of the current Go-Routine and loads the state of the next one. The OS-Thread then continues executing from where that new Go-Routine left off.
+
+Because Go-Routines have very small stacks and are scheduled in user space, context switching between them is very fast and much cheaper than switching between OS-Threads.
+
+However, sometimes we might want to force Go to give other Go-Routines a chance to run even if the current Go-Routine is still doing something. This is where runtime.Gosched() comes in. When we call runtime.Gosched(), it tells Go to stop the current Go-Routine for a moment and allow other Go-Routines to run if they need to. It doesn't stop our Go-Routine permanently, but just gives other tasks a chance to run before our Go-Routine continues.
+
+The number of Logical-Processors is controlled by GOMAXPROCS, and it determines how many Go-Routines can run in parallel (at the same time).
+
+runtime.GOMAXPROCS(n): This function sets the maximum number of CPUs that Go will use for running Go-Routines. By default, Go will use all available CPUs. This function allows us to limit it to n CPUs. runtime.NumCPU(): This function returns the number of CPUs available on the current machine.
+
+```go
+func task1() {
+	for i := 0; i < 5; i++ {
+		fmt.Println("Task 1 - Iteration", i)
+		if i == 2 {
+			// Yield the CPU to other goroutines
+			// This tells the Go runtime to yield and let other goroutines run before continuing with task1(). This allows task2 to run when task1 is paused.
+			runtime.Gosched()
+		}
+		time.Sleep(time.Millisecond * 500)
+	}
+}
+
+func task2() {
+	for i := 0; i < 5; i++ {
+		fmt.Println("Task 2 - Iteration", i)
+		time.Sleep(time.Millisecond * 500)
+	}
+}
+```
 
 ```go
 package main
@@ -70,13 +107,13 @@ import (
 )
 
 // FibRecursive calculates Fibonacci numbers recursively
-func FibRecursive(x int) int {
-	if x <= 0 {
+func FibRecursive(n int) int {
+	if n <= 0 {
 		return 0
-	} else if x == 1 {
+	} else if n == 1 {
 		return 1
 	}
-	return FibRecursive(x-1) + FibRecursive(x-2)
+	return FibRecursive(n-1) + FibRecursive(n-2)
 }
 
 // Fibonacci calculation for each core, passing the index as the Fibonacci number to calculate
@@ -84,9 +121,9 @@ func calculateFibonacci(id int, cpun int, fibNum int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	// Start Fibonacci calculation (it'll be a high CPU operation)
-	fmt.Printf("CPU %d :- Goroutine %d calculating Fibonacci(%d)\n", cpun, id, fibNum)
+	fmt.Printf("CPU %d :- Go-Routine %d calculating Fibonacci(%d)\n", cpun, id, fibNum)
 	result := FibRecursive(fibNum)
-	fmt.Printf("CPU %d :- Goroutine %d result: Fibonacci(%d) = %d\n", cpun, id, fibNum, result)
+	fmt.Printf("CPU %d :- Go-Routine %d result: Fibonacci(%d) = %d\n", cpun, id, fibNum, result)
 }
 
 func main() {
@@ -97,27 +134,27 @@ func main() {
 	// Set the number of CPUs that Go can use to all available CPUs
 	runtime.GOMAXPROCS(numCPU)
 
-	// Create a WaitGroup to wait for all goroutines to finish
+	// Create a WaitGroup to wait for all Go-Routines to finish
 	var wg sync.WaitGroup
 
-	// Distribute Fibonacci numbers across CPU cores starting from Fibonacci(12)
+	// Distribute Fibonacci numbers across CPU cores starting from Fibonacci(32)
 	for i := 0; i < numCPU; i++ {
-		fibNum := 32 + i                           // Start from Fibonacci(12) and increase with each core
+		fibNum := 32 + i                           // Start from Fibonacci(32) and increase with each core
 		wg.Add(1)                                  // Increment the WaitGroup counter
-		go calculateFibonacci(i+1, i, fibNum, &wg) // Launch a goroutine with a unique Fibonacci number
+		go calculateFibonacci(i+1, i, fibNum, &wg) // Launch a Go-Routine with a unique Fibonacci number
 	}
 
-	// Wait for all goroutines to finish
+	// Wait for all Go-Routines to finish
 	wg.Wait()
 
-	// Simulate a little pause to allow you to inspect CPU usage
+	// Simulate a little pause to allow us to inspect CPU usage
 	time.Sleep(5 * time.Second)
 	fmt.Println("DONE---------")
 }
 ```
 
 # Closure in golang:
-A closure is a special type of anonymous function that can use variables, that declared outside of the function. Closures treat functions as values, allowing us to assign functions to variables, pass functions as arguments, and return functions from other functions.
+A closure is a special type of anonymous function that can access/use variables, that declared outside of the function. Closures treat functions as values, allowing us to assign functions to variables, pass functions as arguments, and return functions from other functions.
 
 ```go
 func main() {
@@ -185,7 +222,7 @@ func main() {
 ```
 ```go
 func main() {
-    var i interface{} = 42 // you can change this to any type
+    var i interface{} = 42 // we can change this to any type
 
     switch reflect.TypeOf(i) {
     case reflect.TypeOf(0):
@@ -222,7 +259,7 @@ var sl []int // Nil slice
 
 var sl:=[]int{} // Empty slice
 ```
-Deep copy a slice using either the built-in copy or append function to get a duplicated slice. src and dst slices have different backing arrays. You can see the memory address of their backing array are different.
+Deep copy a slice using either the built-in copy or append function to get a duplicated slice. src and dst slices have different backing arrays. we can see the memory address of their backing array are different.
 
 ```go
 src := []int{1, 2, 3, 4, 5}
@@ -244,13 +281,13 @@ Mutex is used to protect shared resources from being accessed by multiple thread
 
 Semaphore is used to protect shared pool of resources from being accessed by multiple threads simultaneously. Semaphore is a Counter which start from Number of Reosurces. When one thread using the reosurces Semaphore decremented by 1. If semaphore value is 0 then thread will wait untils its value greater than 0. When one thread done with the resources then Semaphore incremented by 1.
 
-Channel is used to communicate via sending and receiving data and provide synchronisation between multiple gorountines. If channel have a value then execution blocked until reader reads from the channel. Channel can be buffered, allowing goroutines to send multiple values without blocking until the buffer is full.
+Channel is used to communicate via sending and receiving data and provide synchronisation between multiple gorountines. If channel have a value then execution blocked until reader reads from the channel. Channel can be buffered, allowing Go-Routines to send multiple values without blocking until the buffer is full.
 
-Waitgroup is used when we want the function should wait until goroutines complete its task. Waitgroup has Add() function which increments the wait-counter for each goroutine. Wait() is used for wait until wait-counter became zero. Done() decrement wait-counter and it called when goroutine complete its task.
+Waitgroup is used when we want the function should wait until Go-Routines complete its task. Waitgroup has Add() function which increments the wait-counter for each Go-Routine. Wait() is used for wait until wait-counter became zero. Done() decrement wait-counter and it called when Go-Routine complete its task.
 
 # Map Synchronisation:
 
-In golang if multiple goroutines try to acess map at same time, then the operations leads to Panic for RACE or DEADLOCK (fatal error: concurrent map read and map write). So we need proper codes for handeling Map. We use MUTEX for LOCK and UNLOCK the Map operations like Read and Write.
+In golang if multiple Go-Routines try to acess map at same time, then the operations leads to Panic for RACE or DEADLOCK (fatal error: concurrent map read and map write). So we need proper codes for handeling Map. We use MUTEX for LOCK and UNLOCK the Map operations like Read and Write.
 ```go
 func producer(m *map[int]string, wg *sync.WaitGroup, mu *sync.RWMutex) {
 	vm := *m
@@ -333,11 +370,11 @@ func main() {
 		arr = append(arr, i)
 	}
 	length := len(arr)
-	goroutines := 4
-	part := length / goroutines
-	ch := make(chan map[int]bool, goroutines)
+	Go-Routines := 4
+	part := length / Go-Routines
+	ch := make(chan map[int]bool, Go-Routines)
 	ma := make(map[int]bool)
-	for i := 0; i < goroutines; i++ {
+	for i := 0; i < Go-Routines; i++ {
 		wg.Add(1)
 		s := i * part
 		e := s + part
@@ -357,7 +394,7 @@ func main() {
 	fmt.Println("Time Taken: ", time.Since(startTime))
 }
 ```
-Two goroutines generate even and odd numbers up to 30 and send them through their respective channels (evenCh and oddCh). The third goroutine prints numbers alternately from these channels, ensuring the sequence. The sync.WaitGroup ensures that the program waits for all goroutines to finish before exiting.
+Two Go-Routines generate even and odd numbers up to 30 and send them through their respective channels (evenCh and oddCh). The third Go-Routine prints numbers alternately from these channels, ensuring the sequence. The sync.WaitGroup ensures that the program waits for all Go-Routines to finish before exiting.
 ```go
 package main
 
@@ -373,7 +410,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	// Goroutine to send even numbers up to 30
+	// Go-Routine to send even numbers up to 30
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -385,7 +422,7 @@ func main() {
 		close(evenCh)
 	}()
 
-	// Goroutine to send odd numbers up to 30
+	// Go-Routine to send odd numbers up to 30
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -414,7 +451,7 @@ func main() {
 		}
 	}()
 
-	// Wait for all goroutines to finish
+	// Wait for all Go-Routines to finish
 	wg.Wait()
 }
 ```
@@ -452,10 +489,10 @@ func main() {
 	// Create a channel to signal when Task 1 is done
 	done := make(chan bool)
 
-	// Start Task 1 in a goroutine
+	// Start Task 1 in a Go-Routine
 	go task1(done)
 
-	// Start Task 2 in a goroutine, but it will wait for Task 1 to complete
+	// Start Task 2 in a Go-Routine, but it will wait for Task 1 to complete
 	go task2(done)
 
 	// Wait for Task 1 and Task 2 to complete before finishing the program
@@ -465,7 +502,7 @@ func main() {
 ```
 
 # Limited Concurrency
-We create a channel sem := make(chan struct{}, concurrencyLimit) with a buffer size of concurrencyLimit (in this case, 5). This means only 5 goroutines can acquire a slot at any given time. Inside each goroutine, sem <- struct{}{} is used to acquire a slot. When a goroutine finishes its task, it releases the slot using <-sem. If the semaphore is full (i.e., 5 goroutines are already running), any additional goroutines will block (wait) until a slot is available.
+We create a channel sem := make(chan struct{}, concurrencyLimit) with a buffer size of concurrencyLimit (in this case, 5). This means only 5 Go-Routines can acquire a slot at any given time. Inside each Go-Routine, sem <- struct{}{} is used to acquire a slot. When a Go-Routine finishes its task, it releases the slot using <-sem. If the semaphore is full (i.e., 5 Go-Routines are already running), any additional Go-Routines will block (wait) until a slot is available.
 ```go
 package main
 
@@ -479,25 +516,25 @@ func task(id int, sem chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done() // Decrement counter when the task is done
 
 	sem <- struct{}{} // Acquire a slot (semaphore)
-	fmt.Printf("Goroutine %d is starting\n", id)
+	fmt.Printf("Go-Routine %d is starting\n", id)
 	time.Sleep(1 * time.Second) // Simulate work by sleeping for 1 second
-	fmt.Printf("Goroutine %d is finished\n", id)
+	fmt.Printf("Go-Routine %d is finished\n", id)
 	<-sem // Release the slot (semaphore)
 }
 
 func main() {
 	var wg sync.WaitGroup
 	concurrencyLimit := 5
-	sem := make(chan struct{}, concurrencyLimit) // Semaphore with a limit of 5 concurrent goroutines
+	sem := make(chan struct{}, concurrencyLimit) // Semaphore with a limit of 5 concurrent Go-Routines
 
-	// Launch 40 goroutines
+	// Launch 40 Go-Routines
 	for i := 1; i <= 40; i++ {
-		wg.Add(1)            // Add a goroutine to the wait group
-		go task(i, sem, &wg) // Start the task as a goroutine
+		wg.Add(1)            // Add a Go-Routine to the wait group
+		go task(i, sem, &wg) // Start the task as a Go-Routine
 	}
 
-	wg.Wait() // Wait for all goroutines to complete
-	fmt.Println("All goroutines have finished.")
+	wg.Wait() // Wait for all Go-Routines to complete
+	fmt.Println("All Go-Routines have finished.")
 }
 ```
 # Concurent File Read and Write
@@ -552,17 +589,17 @@ func main() {
 	var wgW sync.WaitGroup
 	var mu sync.RWMutex
 
-	// Start writer goroutine
+	// Start writer Go-Routine
 	wgW.Add(1)
 	go FileWriter(ch, filename, &wgW, &mu)
 
-	// Start reader goroutine (reads every seconds)
+	// Start reader Go-Routine (reads every seconds)
 	wgR.Add(1)
 	go FileReader(filename, time.Second, &wgR, &mu)
 
-	// Simulate writing from multiple goroutines
+	// Simulate writing from multiple Go-Routines
 	for i := range 10 {
-		msg := fmt.Sprintf("Message from goroutine %d", i)
+		msg := fmt.Sprintf("Message from Go-Routine %d", i)
 		ch <- msg
 		time.Sleep(time.Second)
 	}
@@ -575,7 +612,7 @@ func main() {
 	fmt.Println("Done.")
 }
 ```
-# Listener GoRoutine
+# Listener Go-Routine
 ```go
 package main
 
