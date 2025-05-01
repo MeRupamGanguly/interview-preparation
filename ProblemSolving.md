@@ -1,11 +1,9 @@
 
 # PATTERN 1 : TWO POINTERS
 
-![Image](https://github.com/user-attachments/assets/c527eb09-d83e-4ec8-9a75-82d1f02744d3)
-
-# A : TWO POINTERS
-
 Imagine We have a row of boxes (an array), and we want to look at two boxes at a time. Instead of using one finger to check  use two fingers (pointers) to move across the boxes from different directions. And we move them closer or far to each other based on some rule. Reduces nested loops to single traversal.
+
+![Image](https://github.com/user-attachments/assets/c527eb09-d83e-4ec8-9a75-82d1f02744d3)
 
 Ask ourself:
 
