@@ -14,6 +14,7 @@ Worked on XCO which is data center automation project, where we manage Multiple 
 - **Microservices** are better for large projects where scaling and almost zero downtime are required. Bug fixing and maintaining the codebase are easier. A disadvantage of microservices can be inter-service network calls.
 - **Monolith** is suitable for smaller projects but can become difficult to scale or maintain as the application grows.
 
+
 # Authentication vs Authorization
 Authentication is about validating the credentials like username password biometrics etc.
 
