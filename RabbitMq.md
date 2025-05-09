@@ -285,3 +285,72 @@ err = ch.QueueBind(queue.Name, "", "header_logs", false, headers)
 - **Concurrency**: Running many consumers in parallel to handle more messages.
 - **Flow Control**: Managing how messages are processed to avoid overloading RabbitMQ.
 - **Memory and Disk Usage**: Keep track of resource usage to prevent performance issues.
+
+
+TLS encrypts the communication between clients and RabbitMQ servers, preventing eavesdropping or interception by third parties. Without TLS, messages and credentials sent over the network can be easily captured in plaintext, especially in a shared or insecure network environment (e.g., public Wi-Fi or unsecured VPNs).
+
+TLS helps authenticate the server. When a client connects to RabbitMQ over a TLS-secured connection, it verifies the RabbitMQ server's certificate (using a CA certificate), ensuring the client is connecting to the right server and not an imposter.
+
+We can configure RabbitMQ to request client certificates as part of the TLS handshake. This allows for mutual authentication, meaning both the server and the client verify each other's identity.
+
+Ensure your RabbitMQ server is set up to use TLS. You can modify the RabbitMQ configuration file (rabbitmq.conf) to enable TLS.
+```bash
+listeners.tls.default = 5671
+ssl_options.cacertfile = /path/to/ca_certificate.pem
+ssl_options.certfile = /path/to/server_certificate.pem
+ssl_options.keyfile = /path/to/server_key.pem
+ssl_options.verify = verify_peer
+ssl_options.fail_if_no_peer_cert = true
+```
+listeners.tls.default: The default port for secure connections (5671 is the default for TLS).
+
+ssl_options.cacertfile: The certificate authority's (CA) certificate.
+
+ssl_options.certfile: The RabbitMQ server's certificate.
+
+ssl_options.keyfile: The private key associated with the RabbitMQ server certificate.
+
+ssl_options.verify: Controls whether to verify client certificates.
+
+ssl_options.fail_if_no_peer_cert: If true, RabbitMQ will reject connections without a valid certificate.
+
+
+```go
+	// Load the CA cert
+	caCert, err := os.ReadFile("/path/to/ca_certificate.pem")
+	if err != nil {
+		log.Fatalf("Failed to read CA cert: %v", err)
+	}
+
+	// Create a certificate pool from the CA cert
+	certPool := x509.NewCertPool()
+	certPool.AppendCertsFromPEM(caCert)
+
+	// Create the TLS config
+	tlsConfig := &tls.Config{
+		RootCAs: certPool,
+	}
+
+	// RabbitMQ URL
+	rabbitmqURL := "amqps://user:password@your.rabbitmq.server:5671/"
+
+	// Dial the connection with TLS
+	conn, err := amqp.DialTLS(rabbitmqURL, tlsConfig)
+	if err != nil {
+		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+	}
+	defer conn.Close()
+```
+
+Client Certificates: If RabbitMQ requires a client certificate, you can load the certificate and private key into the tls.Config object.
+```go
+clientCert, err := tls.LoadX509KeyPair("/path/to/client_cert.pem", "/path/to/client_key.pem")
+if err != nil {
+    log.Fatalf("Failed to load client cert: %v", err)
+}
+
+tlsConfig := &tls.Config{
+    RootCAs:      certPool,
+    Certificates: []tls.Certificate{clientCert},
+}
+```
