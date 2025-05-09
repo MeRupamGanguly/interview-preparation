@@ -96,7 +96,7 @@ A Key Management System (KMS) is crucial for managing certificates, private keys
 HashiCorp Vault is a powerful tool for securely managing sensitive data, such as secrets, API keys, certificates, and encryption keys. Vault is highly versatile and can be used to store and manage secrets for both infrastructure and applications. It supports various use cases, including dynamic secrets, identity-based access, data encryption, and certificate management.
 
 
-### OPTIONAL
+### OPTIONAL START
 
 Create a private key for the broker:
 
@@ -113,7 +113,9 @@ Generate a self-signed broker certificate (or have it signed by a CA):
 Create a certificate authority (CA) certificate (for mutual authentication if needed):
 
 `openssl genpkey -algorithm RSA -out ca.key`
+
 `openssl req -new -key ca.key -out ca.csr`
+
 `openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt -days 365`
 
 Sign the broker certificate with the CA:
@@ -123,7 +125,9 @@ Sign the broker certificate with the CA:
 (Optional) Generate client certificates (if you're doing mutual authentication):
 
 `openssl genpkey -algorithm RSA -out kafka-client.key`
+
 `openssl req -new -key kafka-client.key -out kafka-client.csr`
+
 `openssl x509 -req -in kafka-client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out kafka-client.crt -days 365`
 
 Now that you have the broker certificate and private key, you can configure the Kafka brokers to use them: In the server.properties file of the Kafka broker, update the following settings to point to the Vault-generated certificates:
@@ -152,6 +156,7 @@ You need a keystore for the broker's private key and certificate, and a truststo
 Then, import the broker certificate and the CA certificate into the keystore and truststore:
 
 `keytool -keystore kafka-broker.keystore.jks -import -alias broker-cert -file kafka-broker.crt`
+
 `keytool -keystore kafka-broker.truststore.jks -import -alias ca-cert -file ca.crt`
 
 
@@ -161,6 +166,7 @@ Then, import the broker certificate and the CA certificate into the keystore and
 		Consumer: Requires a keystore (if mutual authentication is needed) and a truststore (for the broker's CA certificate).
 
 		Both need the truststore at a minimum to validate the broker’s certificate, but the keystore is needed for client authentication (mutual TLS).
+### OPTIONAL END
 
 ## Difference Between Kafka and RabbitMQ SSL Configuration
 
@@ -355,6 +361,8 @@ func main() {
 ```
 
 ## docker-compose.yml file :
+In Yaml file we need 2 services zookeeper and kafka, where kafka listen to 9092 and zookeeper listen to 2181. And need to set environment variables like KAFKA_ZOOKEEPER_CONNECT, KAFKA_LISTENER_PORT , KAFKA_LISTENER_SECURITY_PROTOCOL etc.
+
 ```yaml
 version: '3'
 services:
