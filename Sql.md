@@ -752,3 +752,34 @@ SELECT
 FROM RankedEmployees
 WHERE row_num <= 3;
 ```
+
+A transaction in SQL is a sequence of one or more SQL operations that are treated as a single unit of work. A transaction ensures data integrity by adhering to the ACID properties
+
+BEGIN and COMMIT are SQL commands used to control transactions. They define when a transaction starts and when it should be finalized and saved to the database.    
+
+
+You can use SAVEPOINT to create intermediate checkpoints in a transaction. This allows you to roll back part of a transaction without discarding everything.
+
+```sql
+BEGIN;
+
+-- Step 1
+INSERT INTO orders (order_id, customer_id) VALUES (1, 101);
+
+SAVEPOINT sp1;
+
+-- Step 2
+INSERT INTO order_items (order_id, item_id) VALUES (1, 'A123');
+
+-- Step 3 (something goes wrong)
+-- Let's say this next insert violates a constraint
+INSERT INTO order_items (order_id, item_id) VALUES (1, NULL);
+
+-- Roll back to the last savepoint
+ROLLBACK TO SAVEPOINT sp1;
+
+-- Continue from there
+INSERT INTO order_items (order_id, item_id) VALUES (1, 'B456');
+
+COMMIT;
+```
