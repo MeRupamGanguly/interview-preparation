@@ -238,12 +238,18 @@ func main() {
     }
 }
 ```
-# TypeCasting Vs TypeConversion:
+# TypeCasting Vs TypeConversion Vs TypeAssertion:
 
 In Typecasting Compiler will automatically convert between types where smaller type value can convert to Larger type value automatically without Code.
 Go does not support it.
 
 In TypeConversion in code we can convert between types if those two types are compatible. Go Support this.
+
+Type assertion is used to extract the concrete value from an interface type. It tells the Go compiler: "I know this interface value is actually of this specific type. 
+
+		var i interface{} = "hello"
+		s := i.(string)  // i contains a string, so this is valid
+		s2, ok := i.(string)
 
 # Array and Slices
 Array can not grow or shrink at runtime, Slice can. 
