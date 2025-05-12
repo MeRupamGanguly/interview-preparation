@@ -245,15 +245,22 @@ Go does not support it.
 
 In TypeConversion in code we can convert between types if those two types are compatible. Go Support this.
 
-Type assertion is used to extract the concrete value from an interface type. It tells the Go compiler: "I know this interface value is actually of this specific type. 
+		var x int = 10
+		var y float64 = float64(x) // Manual conversion
+
+Type assertion is used to extract the concrete value from an interface type. It tells the Go compiler: I know this interface value is actually of this specific type. 
 
 		var i interface{} = "hello"
 		s := i.(string)  // i contains a string, so this is valid
 		s2, ok := i.(string)
 
+strconv.Atoi() in Go is not a type conversion in the language's strict sense — it's actually a function that parses a string and returns an integer.
+
 # Array and Slices
 Array can not grow or shrink at runtime, Slice can. 
 Slice are basically reference of an Array and at RUNTIME it will manipulated such a way that it behave like it can grow or shrink.
+
+In Go, the make function is a built-in function used to initialize and allocate memory for slices, maps, and channels
 
 ```go
 values:=make([]int, 4)
@@ -266,20 +273,36 @@ Empty slice allocate Heap memory, But Nil slice did not allocate Heap memory.
 var sl []int // Nil slice
 
 var sl:=[]int{} // Empty slice
+
+if sl == nil {
+    fmt.Println("The slice is nil")
+}
 ```
-Deep copy a slice using either the built-in copy or append function to get a duplicated slice. src and dst slices have different backing arrays. we can see the memory address of their backing array are different.
+Deep copy a slice using either the built-in copy or append function to get a duplicated slice. src and dst slices have different backing arrays. 
 
 ```go
 src := []int{1, 2, 3, 4, 5}
-dst := append([]int{}, src...)
+dst := append([]int{}, src...) // deep copy
 dst := make([]int, len(src))
+copy(dst, src) // deep copy
 ```
-Shallow copy whose slice header points to the same backing array as the source slice. By assignment, the memory address of the backing array is the same for both of src and dst slices.
+A slice in Go is a descriptor (header) with three fields: Pointer to the underlying backing array, Length, Capacity
+So when you assign a slice to another, we are just copying the header. Both slices point to the same backing array — that's a shallow copy.
+
+By assignment, the memory address of the backing array is the same for both of src and dst slices.
 
 ```go
 src := []int{1, 2, 3, 4, 5}
-dst := src
+dst := src // shallow copy: same backing array
+
+dst[0] = 99
+fmt.Println("src:", src) // [99 2 3 4 5]
+fmt.Println("dst:", dst) // [99 2 3 4 5]
 ```
+
+When you append to a slice and it exceeds its current capacity, Go automatically allocates a new underlying array, usually with a larger capacity.  Allocating a new array with a larger capacity (typically doubling the old one, but this growth strategy can vary).
+
+
 # Concurency Primitives:
 Concurency Primitives are tools that are provided by any programming languages to handle execution behaviors of Concurent tasks.
 
@@ -294,24 +317,25 @@ Channel is used to communicate via sending and receiving data and provide synchr
 Waitgroup is used when we want the function should wait until Go-Routines complete its task. Waitgroup has Add() function which increments the wait-counter for each Go-Routine. Wait() is used for wait until wait-counter became zero. Done() decrement wait-counter and it called when Go-Routine complete its task.
 
 # Map Synchronisation:
+A race condition occurs when two or more goroutines access shared resources (like variables or memory) concurrently, and at least one of the accesses is a write operation. 
+
+A deadlock occurs when two or more goroutines are blocked forever because they are waiting for each other to release resources or perform some action. In a deadlock situation, no goroutine can proceed, and the program essentially halts. This happens when there is circular waiting for resources.
 
 In golang if multiple Go-Routines try to acess map at same time, then the operations leads to Panic for RACE or DEADLOCK (fatal error: concurrent map read and map write). So we need proper codes for handeling Map. We use MUTEX for LOCK and UNLOCK the Map operations like Read and Write.
 ```go
-func producer(m *map[int]string, wg *sync.WaitGroup, mu *sync.RWMutex) {
-	vm := *m
+func producer(m map[int]string, wg *sync.WaitGroup, mu *sync.RWMutex) {
+	
 	for i := 0; i < 5; i++ {
 		mu.Lock()
-		vm[i] = fmt.Sprint("$", i)
+		m[i] = fmt.Sprint("$", i)
 		mu.Unlock()
 	}
-	m = &vm
 	wg.Done()
 }
-func consumer(m *map[int]string, wg *sync.WaitGroup, mu *sync.RWMutex) {
-	vm := *m
+func consumer(m map[int]string, wg *sync.WaitGroup, mu *sync.RWMutex) {
 	for i := 0; i < 5; i++ {
 		mu.RLock()
-		fmt.Println(vm[i])
+		fmt.Println(m[i])
 		mu.RUnlock()
 	}
 	wg.Done()
@@ -463,7 +487,90 @@ func main() {
 	wg.Wait()
 }
 ```
+	Even: 0
+	Even: 2
+	Even: 4
+	Even: 6
+	Even: 8
+	Even: 10
+	Odd: 1
+	Odd: 3
+	Odd: 5
+	Odd: 7
+	Odd: 9
 
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	// Create two channels, one for even numbers and one for odd numbers
+	evenCh := make(chan int)
+	oddCh := make(chan int)
+
+	var wg sync.WaitGroup
+
+	// Go-Routine to send even numbers up to 30
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 1; i <= 10; i++ {
+			if i%2 == 0 {
+				evenCh <- i
+			}
+		}
+		close(evenCh)
+	}()
+
+	// Go-Routine to send odd numbers up to 30
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 1; i <= 10; i++ {
+			if i%2 != 0 {
+				oddCh <- i
+			}
+		}
+		close(oddCh)
+	}()
+
+	// Alternately print even and odd numbers until both channels are closed
+	go func() {
+		for {
+			// This loop keeps running indefinitely (for {}), alternating between printing even and odd numbers, until both channels are closed and drained.
+			odd, okOdd := <-oddCh
+			if okOdd {
+				fmt.Println("Odd:", odd)
+			}
+			even, okEven := <-evenCh
+			if okEven {
+				fmt.Println("Even:", even)
+			}
+			if !okOdd && !okEven {
+				break
+			}
+		}
+	}()
+
+	// Wait for all Go-Routines to finish
+	wg.Wait()
+}
+
+
+```
+	Odd: 1
+	Even: 2
+	Odd: 3
+	Even: 4
+	Odd: 5
+	Even: 6
+	Odd: 7
+	Even: 8
+	Odd: 9
 ```go
 package main
 
