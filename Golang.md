@@ -206,6 +206,20 @@ func main() {
 	fmt.Println("Main Regained") // Will not executed if divisble by 0
 }
 ```
+
+```go
+func demo() {
+    defer func() {
+        recover() // recover from outer panic
+        panic("panic in defer") // new panic
+    }()
+    panic("outer panic") 
+}
+```
+
+` panic("outer panic") ` This initiates stack unwinding. Go starts looking for a defer function to run. The deferred function runs. `recover()` is called. This catches the `"outer panic"` — it stops the unwinding process. At this point, outer panic is suppressed, and the program is safe again. `panic("panic in defer")` is then called. A new panic is initiated during the defer execution. The program crashes again with the new panic "`panic in defer"`. If you run this code in main(), we will see `panic: panic in defer`
+
+
 # Interface 
 Interfaces allow us to define contracts, which are abstract methods, have no body/implementations of the methods. A Struct which wants to implements the Interface need to write the body of every abstract methods the interface holds. We can compose interfaces together. An empty interface can hold any type of values. name.(type) give us the Type the interface will hold at runtime. or we can use reflect.TypeOf(name)
 ```go
@@ -302,7 +316,187 @@ fmt.Println("dst:", dst) // [99 2 3 4 5]
 
 When you append to a slice and it exceeds its current capacity, Go automatically allocates a new underlying array, usually with a larger capacity.  Allocating a new array with a larger capacity (typically doubling the old one, but this growth strategy can vary).
 
+```go
+func main() {
+    s1 := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+    s2 := s1[:5]          // s2 = [0 1 2 3 4], shares backing array with s1
+    s2 = append(s2, 100)  // append to s2
+    fmt.Println(s2)       // ???
+    fmt.Println(s1)       // ???
+}
+```
+s2 shares the same backing array as s1.
+s2 has: Length = 5 , Capacity = 10 (same as s1, since slicing up to index 5 doesn't limit capacity).
+`s2 = append(s2, 100)` now s1[5] = 100 too! Because it’s the same array.
 
+s2 is [0 1 2 3 4 100].
+s1 is [0 1 2 3 4 100 6 7 8 9].
+
+```go
+var a int
+var p *int
+fmt.Println(a, p)
+
+// Output
+0 <nil>
+Explanation: a defaults to 0, and p is a nil pointer because it’s not initialized.
+```
+```go
+var arr [3]int
+fmt.Println(arr)
+
+// OUTPUT
+[0 0 0]
+Arrays are value types; all elements default to their zero values.
+```
+```go
+m := map[string]int{"a": 1, "b": 2}
+delete(m, "c")
+fmt.Println(m)
+
+// OUTPUT
+map[a:1 b:2]
+Deleting a non-existent key is a no-op in Go.
+```
+```go
+var ch chan int
+fmt.Println(ch)
+
+// OUTPUT
+<nil>
+Uninitialized channels are nil.
+```
+```go
+var m map[string]int
+fmt.Println(m)
+
+// OUTPUT
+map[]
+Nil map prints as an empty map. However, writes to it will panic.
+```
+
+```go
+func cleanup(i int) {
+	fmt.Println("cleanup func:", i)
+}
+
+func main() {
+	i := 10
+	defer cleanup(i) // ① defer function call, i evaluated NOW (10)
+	i++              // ② i = 11
+	defer func() {   // ③ defer anonymous function (closure)
+		fmt.Println("anonymous func:", i)
+	}()
+	i = 100          // ④ i becomes 100
+}
+/*
+The variable i is initialized to 10.
+
+The first defer statement calls cleanup(i).
+At this point, the value of i is evaluated immediately, so cleanup(10) is what gets deferred.
+
+Then, i++ increments i from 10 to 11.
+
+The second defer uses an anonymous function (a closure) that references i.
+Unlike regular function calls, closures capture variables by reference, not by value.
+
+After that, i = 100 assigns a new value to i.
+
+When main() finishes, Go executes the deferred functions in last-in, first-out (LIFO) order.
+
+The anonymous function is executed first. Since it references i (now 100), it prints:
+anonymous func: 100
+
+Then, the cleanup function is executed with the original deferred value 10, so it prints:
+cleanup func: 10
+*/
+```
+```go
+func test() (result int) {
+	defer func() {
+		result += 1
+	}()
+	return 5
+}
+// OUTPUT
+This means the function has a named return variable called result.
+This deferred function is registered to run after the return is called, but before the function actually returns to the caller.
+return result = 5, then defer adds 1 before returning.
+```
+```go
+func main() {
+	for i := 0; i < 3; i++ {
+		go func() {
+			fmt.Println(i)
+		}()
+	}
+	time.Sleep(time.Second)
+}
+// OUTPUT
+Answer is non-deterministic. Likely 3 printed 3 times.
+Because all closures share the same i, which becomes 3 by the time they run.
+```
+
+```go
+func main() {
+	s := []int{1, 2, 3}
+	for i := range s {
+		s = append(s, i)
+	}
+	fmt.Println(s)
+}
+// Possible infinite loop depending on append growth. Becomes subtle bug.
+```
+
+```go
+type A struct{}
+
+func (a A) Hello() {
+	fmt.Println("Hello from value receiver")
+}
+
+func main() {
+	var i interface{} = A{}
+	i.(interface {
+		Hello()
+	}).Hello()
+}
+
+// OUTPUT
+A method Hello() on value receiver A (not pointer).
+A{} is stored in the empty interface i, interface{}
+Here, you’re asserting that the dynamic value inside i (which is A{}) implements the interface
+i.(interface {Hello()}) :- "Hey i, I think you’re holding something that can say Hello(). Please show it to me."
+If i really does hold something that has a Hello() method, Go lets you call it.
+
+```
+# *interface{} vs interface{}
+interface{} is already a reference type. *interface{} don't act like a pointer to the original value inside the interface. 
+
+If we change the value inside *interface{}, it does not change the original variable the interface was holding.
+
+var i interface{} = x   // i now holds a copy of x
+var i interface{} = &x // Store a pointer inside the interface, then type-assert and modify
+
+# Escape Analysis
+Escape analysis is the compiler's decision process that determines whether a variable should be allocated on the stack or the heap.
+
+If a variable lives beyond the function's scope, it escapes and gets allocated on the heap. If it doesn’t escape, it stays on the stack, which is faster.
+
+Heap allocations are expensive due to garbage collection.
+
+Avoid returning pointers to local variables unless necessary.
+
+```go
+func escapeStack() int {
+    x := 42
+    return x // x stays on stack
+}
+func escapeHeap() *int {
+    x := 42
+    return &x // x escapes to heap
+}
+```
 # Concurency Primitives:
 Concurency Primitives are tools that are provided by any programming languages to handle execution behaviors of Concurent tasks.
 
@@ -316,6 +510,220 @@ Channel is used to communicate via sending and receiving data and provide synchr
 
 Waitgroup is used when we want the function should wait until Go-Routines complete its task. Waitgroup has Add() function which increments the wait-counter for each Go-Routine. Wait() is used for wait until wait-counter became zero. Done() decrement wait-counter and it called when Go-Routine complete its task.
 
+
+# Channel
+```go
+ch := make(chan int)   // Unbuffered
+ch := make(chan int, 2) // Buffered
+ch <- 42               // Send
+val := <-ch            // Receive
+```
+
+## Fan-Out / Fan-In
+Fan-Out: Distribute work across multiple goroutines.
+```go
+type Job struct {
+    ID  int
+    URL string
+}
+
+type Result struct {
+    JobID   int
+    Content string
+    Error   error
+}
+```
+
+```go
+func worker(id int, jobs <-chan Job, results chan<- Result) {
+    for job := range jobs {
+        content, err := fetchURL(job.URL)
+        results <- Result{JobID: job.ID, Content: content, Error: err}
+    }
+}
+```
+```go
+numWorkers := 5
+for w := 1; w <= numWorkers; w++ {
+    go worker(w, jobs, results)
+}
+```
+```go
+go func() {
+    for i, url := range urls {
+        jobs <- Job{ID: i, URL: url}
+    }
+    close(jobs) // Important to signal workers there's no more work
+}()
+```
+Fan-In: Combine results from multiple channels into one.
+```go
+var wg sync.WaitGroup
+wg.Add(numWorkers)
+
+for i := 0; i < numWorkers; i++ {
+    go func() {
+        for res := range results {
+            process(res)
+        }
+        wg.Done()
+    }()
+}
+```
+## Pipeline Pattern
+The Pipeline Pattern in Go is a powerful and idiomatic way to process data in stages, where each stage runs in its own goroutine, and passes results to the next stage via channels.
+
+```go
+func generator(nums ...int) <-chan int {
+	out := make(chan int)
+	go func() {
+		for _, n := range nums {
+			out <- n
+		}
+		close(out)
+	}()
+	return out
+}
+
+func square(in <-chan int) <-chan int {
+	out := make(chan int)
+	go func() {
+		for n := range in {
+			out <- n * n
+		}
+		close(out)
+	}()
+	return out
+}
+
+
+func sum(in <-chan int) <-chan int {
+	out := make(chan int)
+	go func() {
+		total := 0
+		for n := range in {
+			total += n
+		}
+		out <- total
+		close(out)
+	}()
+	return out
+}
+
+func main() {
+	in := generator(1, 2, 3, 4, 5)
+	sq := square(in)
+	result := sum(sq)
+
+	fmt.Println("Result:", <-result) // Output: 55
+}
+```
+
+## Worker Pool
+
+```go
+type Job struct {
+	ID      int
+	Payload string
+}
+
+type Result struct {
+	JobID   int
+	Outcome string
+}
+
+func worker(id int, jobs <-chan Job, results chan<- Result, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for job := range jobs {
+		outcome := fmt.Sprintf("Processed: %s", job.Payload)
+		fmt.Printf("Worker %d handled job %d\n", id, job.ID)
+		results <- Result{JobID: job.ID, Outcome: outcome}
+	}
+}
+
+func main() {
+	const numWorkers = 3
+	const numJobs = 5
+
+	jobs := make(chan Job, numJobs)
+	results := make(chan Result, numJobs)
+
+	var wg sync.WaitGroup
+
+	// Start workers
+	for i := 1; i <= numWorkers; i++ {
+		wg.Add(1)
+		go worker(i, jobs, results, &wg)
+	}
+
+	// Send jobs
+	for j := 1; j <= numJobs; j++ {
+		jobs <- Job{ID: j, Payload: fmt.Sprintf("task-%d", j)}
+	}
+	close(jobs)
+
+	// Wait for all workers to finish
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Collect results
+	for res := range results {
+		fmt.Printf("Result: Job %d -> %s\n", res.JobID, res.Outcome)
+	}
+}
+```
+## Merging multiple channels
+```go
+func merge(cs ...<-chan int) <-chan int {
+    var wg sync.WaitGroup
+    out := make(chan int)
+
+    output := func(c <-chan int) { 
+		// This defines an anonymous function called output that takes a single read-only channel of integers as input (named c). It is assigned to the variable output.
+        for v := range c {
+			// This starts a loop that reads values from channel c. The range statement will keep receiving values until the channel c is closed.
+            out <- v
+			// Each value received from c is immediately sent to the out channel.
+        }
+        wg.Done()
+    }
+
+    wg.Add(len(cs))
+    for _, c := range cs {
+        go output(c)
+    }
+
+    go func() {
+		// This starts an anonymous goroutine that will run concurrently with the rest of the code. The reason we wrap it in a go statement is to ensure that close(out) happens only after all worker goroutines have completed their tasks.
+
+		// After the wg.Wait() completes, which means all the workers are done, we can safely close the out channel. This is important because: Closing the output channel signals to the receiver that no more data will be sent to it. It prevents a deadlock (if we closed out before all workers finished, the workers might still try to send data to the closed channel, causing a panic).
+
+        wg.Wait()
+        close(out)
+    }()
+    return out
+}
+func main() {
+    ch1 := make(chan int)
+    ch2 := make(chan int)
+
+    go func() {
+        for i := 0; i < 3; i++ { ch1 <- i }
+        close(ch1)
+    }()
+
+    go func() {
+        for i := 10; i < 13; i++ { ch2 <- i }
+        close(ch2)
+    }()
+
+    for val := range merge(ch1, ch2) {
+        fmt.Println(val)
+    }
+}
+```
 # Map Synchronisation:
 A race condition occurs when two or more goroutines access shared resources (like variables or memory) concurrently, and at least one of the accesses is a write operation. 
 
@@ -817,6 +1225,64 @@ func main() {
 	wg.Wait()
 }
 
+```
+# Select
+
+```go
+func main() {
+	dataChan := make(chan string)
+	errChan := make(chan error)
+
+	// Context with 5-minute timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	// Simulate a data-producing goroutine
+	go func() {
+		time.Sleep(2 * time.Second) // simulate work
+		dataChan <- "some result"
+	}()
+	go func() {
+		time.Sleep(3 * time.Second) // simulate work
+		errChan <- fmt.Errorf("something went wrong")
+	}()
+
+	for {
+		select {
+		case data := <-dataChan:
+			fmt.Println("Received data:", data)
+
+		case err := <-errChan:
+			fmt.Println("Received error:", err)
+			return // or continue depending on need
+
+		case <-ctx.Done():
+			fmt.Println("Context expired:", ctx.Err())
+			return
+		}
+	}
+}
+
+/*
+rupx@dev:~/projects/interview-preparation/cmd$ go run main.go 
+Received data: some result
+Received error: something went wrong
+rupx@dev:~/projects/interview-preparation/cmd$ 
+*/
+```
+In a select statement, a case with a nil channel is disabled. It will never be chosen. Default case will execute.
+Accidentally reading from a nil channel without a select causes a deadlock:
+```go
+var ch chan int // nil channel
+select {
+case <-ch:
+    fmt.Println("Won't happen")
+default:
+    fmt.Println("Default case")
+}
+```
+```go
+<-ch // blocks forever
 ```
 # SOLID Principles:
 SOLID priciples are guidelines for designing Code base that are easy to understand maintain and extend over time.
