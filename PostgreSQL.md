@@ -71,3 +71,65 @@ INSERT INTO order_items (item_id, order_id, product_name, quantity, price) VALUE
 (7, 107, 'Webcam', 1, 125.00);
 
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+Create Table
+
+CREATE TABLE Department (
+    department_id INT PRIMARY KEY,
+    department_name VARCHAR(50)
+);
+
+
+Add Data
+
+INSERT INTO Department (department_id, department_name) VALUES
+(1, 'Engineering'),
+(2, 'Marketing'),
+(3, 'HR'),
+(4, 'Finance');
+
+
+Get Data
+
+SELECT * FROM Department;
+
+
+
+CREATE TABLE Employee (
+    employee_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    department_id INT,
+    join_date DATE,
+    FOREIGN KEY (department_id) REFERENCES Department(department_id)
+);
+
+
+INSERT INTO Employee (employee_id, name, department_id, join_date) VALUES
+(101, 'Alice', 1, '2020-01-10'),
+(102, 'Bob', 1, '2021-06-15'),
+(103, 'Charlie', 2, '2019-03-22'),
+(104, 'David', 3, '2022-07-01'),
+(105, 'Eve', 4, '2018-11-30'),
+(106, 'Frank', 1, '2023-02-14');
+
+
+CREATE TABLE Salary (
+    salary_id INT PRIMARY KEY,
+    employee_id INT,
+    base_salary DECIMAL(10, 2),
+    bonus DECIMAL(10, 2),
+    effective_from DATE,
+    FOREIGN KEY (employee_id) REFERENCES Employee(employee_id)
+);
