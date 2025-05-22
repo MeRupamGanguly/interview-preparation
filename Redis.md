@@ -136,7 +136,7 @@ if err != nil {
 }
 ```
 ### Distributed Lock
-Imagine you have an e-commerce platform with limited stock for an item. When multiple users are trying to purchase the last available item simultaneously, you want to ensure that only one of them succeeds in making the purchase while others are blocked from trying to purchase the same item.
+Imagine we have an e-commerce platform with limited stock for an item. When multiple users are trying to purchase the last available item simultaneously, we want to ensure that only one of them succeeds in making the purchase while others are blocked from trying to purchase the same item.
 
 Redis supports distributed locks to ensure only one process accesses a resource at a time. This is useful in preventing race conditions in distributed systems.
 

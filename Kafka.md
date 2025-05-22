@@ -37,7 +37,7 @@ In kafka we have ConfigMap struct where we can initalize
 ```go
 	// Kafka configuration with retry settings
 	config := &kafka.ConfigMap{
-		"bootstrap.servers":    "your-kafka-broker:9093", // Broker address
+		"bootstrap.servers":    "our-kafka-broker:9093", // Broker address
 		"acks":                 "all", // Ensure all replicas have acknowledged the message
 		"retries":              5,     // Number of retries in case of failure
 		"retry.backoff.ms":     500,   // Wait time before retrying (in ms)
@@ -50,7 +50,7 @@ In kafka we have ConfigMap struct where we can initalize
 
 Kafka brokers, producers, and consumers might be deployed in different environments or regions. To ensure that the data transmitted between these entities is secure and not intercepted by unauthorized actors, SSL/TLS is used to encrypt the messages.
 
-Kafka requires authentication mechanisms to ensure that only authorized producers and consumers can interact with the Kafka brokers. This is achieved through SSL/TLS certificates. Without this, anyone could potentially produce or consume messages from your Kafka cluster.
+Kafka requires authentication mechanisms to ensure that only authorized producers and consumers can interact with the Kafka brokers. This is achieved through SSL/TLS certificates. Without this, anyone could potentially produce or consume messages from our Kafka cluster.
 
 
 TLS is the successor to SSL and provides stronger encryption and security. TLS is widely used today for securing communication channels over networks, including HTTP (HTTPS), email, and Kafka.
@@ -63,15 +63,15 @@ Setting up Kafka with SSL/TLS encryption in a production environment, especially
 
 - Private Key (private-key): The private key corresponding to the broker's certificate.
 
-- Client Certificate (certificate): If you're using client authentication (mutual TLS), each client (microservice) will need its own certificate.
+- Client Certificate (certificate): If we're using client authentication (mutual TLS), each client (microservice) will need its own certificate.
 
 Kafka can also authenticate both the client and the server. This is called mutual TLS (mTLS), which adds an extra layer of security by ensuring that both the client (producer/consumer) and the Kafka broker are authenticated using their respective certificates.
 
 The CA certificate is a trusted certificate authority that signs the broker certificate and, optionally, the client certificate. It is used to verify the authenticity of the Kafka broker’s certificate and any client certificates.
 
-Without the CA certificate, a Kafka client would not be able to trust the broker's certificate or verify its authenticity. In a production environment, you typically use certificates signed by a public or private certificate authority (CA). 
+Without the CA certificate, a Kafka client would not be able to trust the broker's certificate or verify its authenticity. In a production environment, we typically use certificates signed by a public or private certificate authority (CA). 
 
-Broker certificate allows the Kafka client to verify that it is connecting to the right Kafka broker and not an imposter. If you use mutual authentication, this is essential.  The broker uses this certificate to establish secure connections and ensure encrypted communication. If using mTLS, this certificate is sent during the SSL handshake to prove the identity of the server.
+Broker certificate allows the Kafka client to verify that it is connecting to the right Kafka broker and not an imposter. If we use mutual authentication, this is essential.  The broker uses this certificate to establish secure connections and ensure encrypted communication. If using mTLS, this certificate is sent during the SSL handshake to prove the identity of the server.
 
 The private key is associated with the broker's certificate. It is used by the Kafka broker to decrypt incoming requests that were encrypted using its public key (from the certificate). The private key is crucial because, during the SSL handshake,
 
@@ -87,9 +87,17 @@ Using mTLS, Kafka can restrict access to certain producers and consumers, allowi
 - Kafka Broker need to onfigured to support SSL/TLS. For this we can modify the server.properties file.
 - When we call kafka.NewProducer(&kafka.ConfigMap{...} and kafka.NewConsumer(&kafka.ConfigMap{..}  we need to pass security protocol ssl/tls, CA certificate location, Client certificate location, Client private key location, client pasword etc.
 
+both the Kafka server and Kafka clients (e.g., producers, consumers) need their own certificates and private keys if we are enabling mutual TLS (mTLS), which is highly recommended for secure production environments. On the Kafka Client and server (Producer/Consumer)  Private Key, Signed Certificate, Keystore (with private key + certificate), Truststore (with server CA certificate) needed.
+
+If mTLS is not enabled, then only the Kafka broker needs to present a certificate to prove its identity to the client. The client does not need its own certificate or private key.
+
+The Kafka broker must have a keystore that contains its private key and signed certificate, so it can establish a secure TLS connection. It can also have a truststore if needed, for verifying client certificates in other contexts (though not required without mTLS).
+
+The Kafka clients (producers or consumers) only need a truststore containing the CA certificate that signed the Kafka broker's certificate. This allows the client to verify the server’s identity. The client does not need a private key, signed certificate, or a keystore in this setup.
+
 In a microservices architecture, each service that communicates with Kafka will need to use the above configuration , Service 1 Needs access to ca.crt, kafka-client.crt, and kafka-client.key. Similarly, Service 2 will need the same certificates (or its own unique client certificates).
 
-Microservices can access the necessary certificates (you may want to store them securely, e.g., in a vault, or use Kubernetes secrets in a containerized environment).
+Microservices can access the necessary certificates (we may want to store them securely, e.g., in a vault, or use Kubernetes secrets in a containerized environment).
 
 A Key Management System (KMS) is crucial for managing certificates, private keys, and other sensitive information securely. KMS solutions provide centralized management, automated key rotation, and secure storage. Many regulations require the use of KMS for managing encryption keys and certificates. KMS can automatically rotate keys, provide audit trails, and simplify compliance with encryption standards.
 
@@ -122,7 +130,7 @@ Sign the broker certificate with the CA:
 
 `openssl x509 -req -in kafka-broker.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out kafka-broker.crt -days 365`
 
-(Optional) Generate client certificates (if you're doing mutual authentication):
+(Optional) Generate client certificates (if we're doing mutual authentication):
 
 `openssl genpkey -algorithm RSA -out kafka-client.key`
 
@@ -130,7 +138,7 @@ Sign the broker certificate with the CA:
 
 `openssl x509 -req -in kafka-client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out kafka-client.crt -days 365`
 
-Now that you have the broker certificate and private key, you can configure the Kafka brokers to use them: In the server.properties file of the Kafka broker, update the following settings to point to the Vault-generated certificates:
+Now that we have the broker certificate and private key, we can configure the Kafka brokers to use them: In the server.properties file of the Kafka broker, update the following settings to point to the Vault-generated certificates:
 
 ```bash
 listeners=SSL://0.0.0.0:9093
@@ -140,7 +148,7 @@ ssl.keystore.password=broker-keystore-password
 ssl.key.password=broker-key-password
 ssl.truststore.location=/path/to/kafka-broker.truststore.jks
 ssl.truststore.password=broker-truststore-password
-ssl.client.auth=required  # Optional, if you want to enforce client certificates
+ssl.client.auth=required  # Optional, if we want to enforce client certificates
 ```
 
 The producer (which sends messages to Kafka) needs to authenticate itself to the Kafka broker, usually via SSL/TLS encryption. If the broker requires client authentication (i.e., the broker verifies the producer's identity), the producer will need:
@@ -194,7 +202,7 @@ writer, err := kafka.NewProducer(&kafka.ConfigMap{
     "ssl.ca.location":     "/path/to/ca.crt",   // CA certificate
     "ssl.certificate.location": "/path/to/kafka-client.crt",  // Client certificate
     "ssl.key.location":    "/path/to/kafka-client.key",       // Client private key
-    "ssl.key.password":    "your-client-key-password",  // Client key password
+    "ssl.key.password":    "our-client-key-password",  // Client key password
 })
 if err != nil {
     log.Fatalf("Error creating producer: %v", err)
@@ -210,7 +218,7 @@ consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
     "ssl.ca.location":     "/path/to/ca.crt",   // CA certificate
     "ssl.certificate.location": "/path/to/kafka-client.crt",  // Client certificate
     "ssl.key.location":    "/path/to/kafka-client.key",       // Client private key
-    "ssl.key.password":    "your-client-key-password",  // Client key password
+    "ssl.key.password":    "our-client-key-password",  // Client key password
 })
 if err != nil {
     log.Fatalf("Error creating consumer: %v", err)
@@ -279,7 +287,7 @@ func main() {
 	p.Flush(15 * 1000) // Wait for 15 seconds to ensure delivery
 	log.Printf("Order event sent: %s", orderData)
 }
-// To produce messages to a specific Kafka partition using the confluent-kafka-go library, you need to set the partition explicitly in the TopicPartition when sending the message. By default, if you set the partition to kafka.PartitionAny, Kafka will automatically assign the partition for you based on its internal partitioning logic (e.g., using a partitioner).
+// To produce messages to a specific Kafka partition using the confluent-kafka-go library, we need to set the partition explicitly in the TopicPartition when sending the message. By default, if we set the partition to kafka.PartitionAny, Kafka will automatically assign the partition for we based on its internal partitioning logic (e.g., using a partitioner).
 
 // Calculate partition from the OrderID (e.g., using a hash function)
 	partition := int32(crc32.ChecksumIEEE([]byte(order.OrderID)) % 3) // Assuming 3 partitions, adjust as needed
@@ -306,7 +314,7 @@ kafka.RequireAll: Wait for acknowledgment from all replicas (highest durability)
 `IDempotent` setting enables or disables idempotent producers. When idempotency is enabled, Kafka ensures that even if the producer sends the same message multiple times (due to retries), the message is only written once to the Kafka topic.
 
 `Transport` is the TLS configuration. It defines how the connection will be secured with SSL/TLS.
-NEVER use InsecureSkipVerify: true in a production environment because it makes your connection vulnerable to man-in-the-middle (MITM) attacks. Always set it to false in production.
+NEVER use InsecureSkipVerify: true in a production environment because it makes our connection vulnerable to man-in-the-middle (MITM) attacks. Always set it to false in production.
 
 
 ```go

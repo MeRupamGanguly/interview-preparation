@@ -1,3 +1,16 @@
+
+| Pattern Name               | What It’s For                           | Example Problems                            |
+|---------------------------|-----------------------------------------|---------------------------------------------|
+| 1. **Two Pointers**       | Scan from two ends / two speeds         | Palindrome, Pair Sum, Remove Duplicates     |
+| 2. **Sliding Window**     | Work with subarrays/substrings          | Longest Substring, Max Sum in Range         |
+| 3. **DFS**                 | Go deep into trees/graphs               | Maze Solver, Binary Tree Paths              |
+| 4. **BFS**                 | Explore level by level                  | Shortest Path, Social Network               |
+| 5. **Binary Search**       | Search sorted data fast                 | Number Finder, First/Last Position          |
+| 6. **Heap / Priority Queue** | Get top/bottom items fast             | K Largest Numbers, Task Scheduling          |
+| 7. **Dynamic Programming** | Break big problems into small parts     | Fibonacci, Knapsack, Coin Change            |
+
+---
+
 ```go
 func reverseString(s string) string {
     runes := []rune(s)

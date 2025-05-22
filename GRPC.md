@@ -68,10 +68,10 @@ To generate a private key, we can use the following command: `openssl genpkey -a
 To generate Self-Signed Certificate : `openssl req -new -x509 -key server.key -out server.crt -days 365`
 Creating a Certificate Signed by a Trusted CA:
 - Create a Private Key
-- Once you have the private key, you can generate a CSR. This CSR contains information about the server, and it will be submitted to the CA for signing. we can use the following command: `openssl req -new -key server.key -out server.csr` You will be prompted for details like Common Name (CN), Organization, and Location. The most important field is CN (Common Name), which should match the fully qualified domain name (FQDN) of your server (e.g., example.com or yourserver.com).
-- You need to submit the server.csr file to a CA (trusted organization) for signing. If you are using a public CA, like Let's Encrypt, GoDaddy, or DigiCert, they will provide a process for submitting the CSR and issuing a signed certificate.
-- After the CA signs the CSR, you will receive a signed certificate (server.crt). This certificate is now trusted (assuming it's signed by a trusted CA).
-- After obtaining the signed certificate, you can verify that the certificate matches the private key and is properly signed by the CA:
+- Once we have the private key, we can generate a CSR. This CSR contains information about the server, and it will be submitted to the CA for signing. we can use the following command: `openssl req -new -key server.key -out server.csr` You will be prompted for details like Common Name (CN), Organization, and Location. The most important field is CN (Common Name), which should match the fully qualified domain name (FQDN) of our server (e.g., example.com or ourserver.com).
+- You need to submit the server.csr file to a CA (trusted organization) for signing. If we are using a public CA, like Let's Encrypt, GoDaddy, or DigiCert, they will provide a process for submitting the CSR and issuing a signed certificate.
+- After the CA signs the CSR, we will receive a signed certificate (server.crt). This certificate is now trusted (assuming it's signed by a trusted CA).
+- After obtaining the signed certificate, we can verify that the certificate matches the private key and is properly signed by the CA:
 
 ```go
 // Load server certificate and private key for TLS
@@ -149,7 +149,7 @@ import (
 
     "golang.org/x/net/context"
     "google.golang.org/grpc"
-    pb "path/to/your/chat" // Adjust the import path
+    pb "path/to/our/chat" // Adjust the import path
 )
 
 // Server struct
@@ -261,7 +261,7 @@ Summary of Steps
 
 - Kubernetes assigns a DNS name to each Service (e.g., my-service.default.svc.cluster.local). gRPC clients can connect to these DNS names. Load balancing is handled by Kubernetes using kube-proxy (usually Round Robin).
 
-            You define a Deployment for your gRPC server.
+            You define a Deployment for our gRPC server.
 
             You expose it via a Service (usually ClusterIP or LoadBalancer).
 
@@ -269,4 +269,4 @@ Summary of Steps
 
             grpc.Dial("user-service.default.svc.cluster.local:50051", ...)
 
--  Network hiccups, transient server errors, or load balancer issues can cause temporary failures—retries give the system a second (or third) chance to succeed without user impact.  gRPC retries can be implemented in two main ways: using client-side service configuration or manual retry logic via interceptors. With service config (supported in Go and Java), you define a retryPolicy in the service’s config JSON, specifying rules like max attempts, backoff, and retryable status codes—this is automatic and built into the gRPC client. On the other hand, interceptors allow you to manually code retry logic by wrapping client calls and reissuing them based on custom conditions. While service config is simpler and declarative, interceptors offer more control and flexibility. For basic retry needs, service config is recommended when available. 
+-  Network hiccups, transient server errors, or load balancer issues can cause temporary failures—retries give the system a second (or third) chance to succeed without user impact.  gRPC retries can be implemented in two main ways: using client-side service configuration or manual retry logic via interceptors. With service config (supported in Go and Java), we define a retryPolicy in the service’s config JSON, specifying rules like max attempts, backoff, and retryable status codes—this is automatic and built into the gRPC client. On the other hand, interceptors allow us to manually code retry logic by wrapping client calls and reissuing them based on custom conditions. While service config is simpler and declarative, interceptors offer more control and flexibility. For basic retry needs, service config is recommended when available. 

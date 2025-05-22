@@ -92,7 +92,7 @@ func consumeMessages(ch *amqp.Channel, wg *sync.WaitGroup, queueName string, pre
 	}
 	// Process each message
 	for msg := range msgs {
-		// Simulate processing of the message (you can replace this with actual business logic)
+		// Simulate processing of the message (we can replace this with actual business logic)
 		fmt.Printf("Processing message: %s\n", msg.Body)
 		time.Sleep(1 * time.Second) // Simulate processing time (can be replaced with actual logic)
 		// Acknowledge the message to let RabbitMQ know it's been processed
@@ -274,9 +274,9 @@ err = ch.QueueBind(queue.Name, "", "header_logs", false, headers)
 ```
 - **Automatic Acknowledgement**: The message is automatically confirmed once sent to the consumer. This is the default behavior. In `ch.Consume()` function we have one boolean argument `auto-ack` by which we can set it.
 
-- **Manual Acknowledgement**: The consumer confirms it has received and processed a message. In `ch.Consume()` function we have one boolean argument `auto-ack` by which we can unset it. In this case, the message is not considered acknowledged until you explicitly call the Ack method. `msg.Ack(false)`.
+- **Manual Acknowledgement**: The consumer confirms it has received and processed a message. In `ch.Consume()` function we have one boolean argument `auto-ack` by which we can unset it. In this case, the message is not considered acknowledged until we explicitly call the Ack method. `msg.Ack(false)`.
 
-- **Negative Acknowledgement (Nack)**: When a message is rejected by a consumer, RabbitMQ can retry or discard it. In this case, you can use Nack to reject the message, and optionally, you can requeue it for another attempt. `msg.Nack(false, true)` true to requeue the message
+- **Negative Acknowledgement (Nack)**: When a message is rejected by a consumer, RabbitMQ can retry or discard it. In this case, we can use Nack to reject the message, and optionally, we can requeue it for another attempt. `msg.Nack(false, true)` true to requeue the message
 
 - **Clustering**: Running RabbitMQ on multiple servers to spread the load and ensure it's always available.
 - **Mirrored Queues**: Copying queues to other servers in the cluster so that if one server fails, messages are still available.
@@ -293,7 +293,7 @@ TLS helps authenticate the server. When a client connects to RabbitMQ over a TLS
 
 We can configure RabbitMQ to request client certificates as part of the TLS handshake. This allows for mutual authentication, meaning both the server and the client verify each other's identity.
 
-Ensure your RabbitMQ server is set up to use TLS. You can modify the RabbitMQ configuration file (rabbitmq.conf) to enable TLS.
+Ensure our RabbitMQ server is set up to use TLS. You can modify the RabbitMQ configuration file (rabbitmq.conf) to enable TLS.
 ```bash
 listeners.tls.default = 5671
 ssl_options.cacertfile = /path/to/ca_certificate.pem
@@ -332,7 +332,7 @@ ssl_options.fail_if_no_peer_cert: If true, RabbitMQ will reject connections with
 	}
 
 	// RabbitMQ URL
-	rabbitmqURL := "amqps://user:password@your.rabbitmq.server:5671/"
+	rabbitmqURL := "amqps://user:password@our.rabbitmq.server:5671/"
 
 	// Dial the connection with TLS
 	conn, err := amqp.DialTLS(rabbitmqURL, tlsConfig)
@@ -342,7 +342,7 @@ ssl_options.fail_if_no_peer_cert: If true, RabbitMQ will reject connections with
 	defer conn.Close()
 ```
 
-Client Certificates: If RabbitMQ requires a client certificate, you can load the certificate and private key into the tls.Config object.
+Client Certificates: If RabbitMQ requires a client certificate, we can load the certificate and private key into the tls.Config object.
 ```go
 clientCert, err := tls.LoadX509KeyPair("/path/to/client_cert.pem", "/path/to/client_key.pem")
 if err != nil {

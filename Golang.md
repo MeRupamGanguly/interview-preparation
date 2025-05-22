@@ -217,7 +217,7 @@ func demo() {
 }
 ```
 
-` panic("outer panic") ` This initiates stack unwinding. Go starts looking for a defer function to run. The deferred function runs. `recover()` is called. This catches the `"outer panic"` — it stops the unwinding process. At this point, outer panic is suppressed, and the program is safe again. `panic("panic in defer")` is then called. A new panic is initiated during the defer execution. The program crashes again with the new panic "`panic in defer"`. If you run this code in main(), we will see `panic: panic in defer`
+` panic("outer panic") ` This initiates stack unwinding. Go starts looking for a defer function to run. The deferred function runs. `recover()` is called. This catches the `"outer panic"` — it stops the unwinding process. At this point, outer panic is suppressed, and the program is safe again. `panic("panic in defer")` is then called. A new panic is initiated during the defer execution. The program crashes again with the new panic "`panic in defer"`. If we run this code in main(), we will see `panic: panic in defer`
 
 
 # Interface 
@@ -301,7 +301,7 @@ dst := make([]int, len(src))
 copy(dst, src) // deep copy
 ```
 A slice in Go is a descriptor (header) with three fields: Pointer to the underlying backing array, Length, Capacity
-So when you assign a slice to another, we are just copying the header. Both slices point to the same backing array — that's a shallow copy.
+So when we assign a slice to another, we are just copying the header. Both slices point to the same backing array — that's a shallow copy.
 
 By assignment, the memory address of the backing array is the same for both of src and dst slices.
 
@@ -314,7 +314,7 @@ fmt.Println("src:", src) // [99 2 3 4 5]
 fmt.Println("dst:", dst) // [99 2 3 4 5]
 ```
 
-When you append to a slice and it exceeds its current capacity, Go automatically allocates a new underlying array, usually with a larger capacity.  Allocating a new array with a larger capacity (typically doubling the old one, but this growth strategy can vary).
+When we append to a slice and it exceeds its current capacity, Go automatically allocates a new underlying array, usually with a larger capacity.  Allocating a new array with a larger capacity (typically doubling the old one, but this growth strategy can vary).
 
 ```go
 func main() {
@@ -465,9 +465,9 @@ func main() {
 // OUTPUT
 A method Hello() on value receiver A (not pointer).
 A{} is stored in the empty interface i, interface{}
-Here, you’re asserting that the dynamic value inside i (which is A{}) implements the interface
-i.(interface {Hello()}) :- "Hey i, I think you’re holding something that can say Hello(). Please show it to me."
-If i really does hold something that has a Hello() method, Go lets you call it.
+Here, we’re asserting that the dynamic value inside i (which is A{}) implements the interface
+i.(interface {Hello()}) :- "Hey i, I think we’re holding something that can say Hello(). Please show it to me."
+If i really does hold something that has a Hello() method, Go lets we call it.
 
 ```
 # *interface{} vs interface{}

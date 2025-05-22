@@ -17,230 +17,8 @@ rupx@dev:~$ docker exec -it postgres /bin/bash
 root@a447994125b9:/# psql -U myuser -d mydatabase
 mydatabase=# \c mydatabase
 You are now connected to database "mydatabase" as user "myuser".
-mydatabase=# CREATE TABLE Users (
-    UserID INT PRIMARY KEY,
-    UserName VARCHAR(50),
-    ReferrerID INT
-);
-CREATE TABLE
-mydatabase=# CREATE TABLE Products (
-    ProductID INT PRIMARY KEY,
-    ProductName VARCHAR(50)
-);
-CREATE TABLE
-mydatabase=# CREATE TABLE Orders (
-    OrderID INT PRIMARY KEY,
-    UserID INT,
-    ProductID INT,
-    FOREIGN KEY (UserID) REFERENCES Users(UserID),
-    FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
-);
-CREATE TABLE
-mydatabase=# \dt
-         List of relations
- Schema |   Name   | Type  | Owner  
---------+----------+-------+--------
- public | orders   | table | myuser
- public | products | table | myuser
- public | users    | table | myuser
-(3 rows)
-
-mydatabase=# INSERT INTO Users (UserID, UserName, ReferrerID) VALUES
-(1, 'Alice', NULL),
-(2, 'Bob', 1),
-(3, 'Charlie', 1),
-(4, 'Diana', 2);
-INSERT 0 4
-mydatabase=# INSERT INTO Products (ProductID, ProductName) VALUES
-(1001, 'Laptop'),
-(1002, 'Phone'),
-(1003, 'Tablet'),
-(1004, 'Monitor');
-INSERT 0 4
-mydatabase=# INSERT INTO Orders (OrderID, UserID, ProductID) VALUES
-(101, 1, 1001),
-(102, 2, 1002),
-(103, 2, 1003);
-INSERT 0 3
-mydatabase=# 
-```
-# FUNCTIONS
-
-```bash
-mydatabase=# SELECT UPPER(username) AS USER,LOWER(username) AS user, LENGTH(username) AS Length,SUBSTRING(username,2,3) AS SS FROM Users;
-| user    | user    | length | ss  |
-|---------|---------|--------|-----|
-| ALICE   | alice   | 5      | lic |
-| BOB     | bob     | 3      | ob  |
-| CHARLIE | charlie | 7      | har |
-| DIANA   | diana   | 5      | ian |
-(4 rows)
-
-mydatabase=# SELECT UPPER(username) AS USER,LOWER(username) AS user, LENGTH(username) AS Length,SUBSTRING(username,2,5) AS SS FROM Users;
-| user    | user    | length | ss    |
-|---------|---------|--------|-------|
-| ALICE   | alice   | 5      | lice  |
-| BOB     | bob     | 3      | ob    |
-| CHARLIE | charlie | 7      | harli |
-| DIANA   | diana   | 5      | iana  |
-(4 rows)
-
-mydatabase=# SELECT userid, CONCAT(username,':',referrerid) AS reference FROM Users;
-| userid | reference   |
-|--------|-------------|
-| 1      | Alice:      |
-| 2      | Bob:1       |
-| 3      | Charlie:1   |
-| 4      | Diana:2     |
-
-mydatabase=# SELECT userid, REPLACE(username, 'i','j') AS relaced_name FROM Users;
-| userid | relaced_name |
-|--------|--------------|
-| 1      | Aljce        |
-| 2      | Bob          |
-| 3      | Charlje      |
-| 4      | Djana        |
 ```
 
-- Removes leading/trailing spaces	TRIM(' hi ')
-- Removes leading spaces	LTRIM(' hi')
-- Removes trailing spaces	RTRIM('hi ')
-- Leftmost n chars	LEFT('hello', 2)
-- Rightmost n chars	RIGHT('hello', 2)
-- Repeats string n times	REPEAT('ha', 3)
-- Reverses string	REVERSE('abc')
-- Finds index of substring	POSITION('b' IN 'abc')
-- Position of substring	INSTR('abc', 'b')
-- Pattern match	'abc' LIKE 'a%'
-- Case-insensitive match	'abc' ILIKE 'A%'
-- Regex-like pattern	'abc' SIMILAR TO 'a%'
-- String formatting	FORMAT('Name: %s, Age: %s', 'Bob', 30)
-- ASCII code of first char	ASCII('A')
-- Char from ASCII code	CHR(65)
-
-```bash
-mydatabase=# CREATE TABLE employees (
-    emp_id INT PRIMARY KEY,
-    name VARCHAR(50),
-    department VARCHAR(50),
-    salary INT,
-    age INT,
-    active BOOLEAN
-);
-CREATE TABLE
-mydatabase=# INSERT INTO employees (emp_id, name, department, salary, age, active) VALUES
-(1, 'Alice', 'HR', 50000, 30, TRUE),
-(2, 'Bob', 'IT', 60000, 35, TRUE),
-(3, 'Charlie', 'IT', 55000, 28, FALSE),
-(4, 'Diana', 'HR', 52000, 40, TRUE),
-(5, 'Evan', 'Finance', 70000, 38, TRUE),
-(6, 'Frank', 'Finance', 67000, 45, FALSE);
-INSERT 0 6
-
-mydatabase=# SELECT * FROM employees;
-| emp_id | name    | department | salary | age | active |
-|--------|---------|------------|--------|-----|--------|
-| 1      | Alice   | HR         | 50000  | 30  | true   |
-| 2      | Bob     | IT         | 60000  | 35  | true   |
-| 3      | Charlie | IT         | 55000  | 28  | false  |
-| 4      | Diana   | HR         | 52000  | 40  | true   |
-| 5      | Evan    | Finance    | 70000  | 38  | true   |
-| 6      | Frank   | Finance    | 67000  | 45  | false  |
-
-``` bash
-mydatabase=# SELECT COUNT(*) FROM employees; # Total row count
-| count |
-|-------|
-| 6     |
-
-mydatabase=# SELECT AVG(age) FROM employees;
-|         avg         |
-|---------------------|
-| 36.0000000000000000
-(1 row)
-
-mydatabase=# SELECT ROUND(AVG(age),2) FROM employees;
-| round |
-|-------|
-| 36.00 |
-(1 row)
-
-mydatabase=# SELECT SUM(salary) FROM employees;
-  sum   
---------
- 354000
-(1 row)
-
-mydatabase=# SELECT MIN(salary) FROM employees;
-  min  
--------
- 50000
-(1 row)
-
-mydatabase=# SELECT MAX(salary) FROM employees;
-  max  
--------
- 70000
-(1 row)
-
-# ------------  GROUP BY  ------------
-
-mydatabase=# SELECT department FROM employees GROUP BY department;
- department 
-------------
- Finance
- IT
- HR
-(3 rows)
-
-mydatabase=# SELECT active FROM employees GROUP BY active;
- active 
---------
- f
- t
-(2 rows)
-
-mydatabase=# SELECT department, SUM(salary) FROM employees GROUP BY department;
- department |  sum   
-------------+--------
- Finance    | 137000
- IT         | 115000
- HR         | 102000
-(3 rows)
-
-mydatabase=# SELECT department, SUM(salary) AS total FROM employees GROUP BY department ORDER BY total;
- department | total  
-------------+--------
- HR         | 102000
- IT         | 115000
- Finance    | 137000
-(3 rows)
-
-mydatabase=# SELECT department, SUM(salary) AS total FROM employees GROUP BY department ORDER BY total desc;
- department | total  
-------------+--------
- Finance    | 137000
- IT         | 115000
- HR         | 102000
-(3 rows)
-
-# ------------  HAVING  ------------
-
-mydatabase=# SELECT department, SUM(salary) AS total FROM employees GROUP BY department HAVING SUM(salary)>110000;
- department | total  
-------------+--------
- Finance    | 137000
- IT         | 115000
-(2 rows)
-
-mydatabase=# SELECT department, SUM(salary) AS total FROM employees GROUP BY department HAVING SUM(salary)>110000 AND SUM(salary)<120000;
- department | total  
-------------+--------
- IT         | 115000
-(1 row)
-
-
-```
 # JOINS
 1. INNER JOIN : Returns only matching rows from both tables.
 
@@ -468,7 +246,7 @@ We want to automatically update a LastModified timestamp field any time a row is
 ```bash
 CREATE TRIGGER trg_UpdateTimestamp # creates a new trigger named trg_UpdateTimestamp.
 AFTER UPDATE ON Employees
-FOR EACH ROW # he trigger will run once per row that is updated, not just once per statement. If your UPDATE statement affects 5 rows, this trigger will run 5 times — once for each row.
+FOR EACH ROW # he trigger will run once per row that is updated, not just once per statement. If our UPDATE statement affects 5 rows, this trigger will run 5 times — once for each row.
 BEGIN # trigger body
    UPDATE Employees 
    SET LastModified = NOW() # This updates the same row that was just updated, setting the LastModified column to the current timestamp using NOW()
@@ -562,7 +340,7 @@ A clustered index means the actual table data is stored in the same order as the
     ```
   Future inserts won't follow this order.It's not maintained automatically. You’d need to manually recluster again later.
 
-  All indexes in PostgreSQL are non-clustered by default. When you: `CREATE INDEX idx_email ON users(email);` You're building a separate structure that helps look up users by email quickly, but it doesn’t change how the rows are stored in the table.
+  All indexes in PostgreSQL are non-clustered by default. When we: `CREATE INDEX idx_email ON users(email);` You're building a separate structure that helps look up users by email quickly, but it doesn’t change how the rows are stored in the table.
 
 - CTID : Every index in PostgreSQL uses CTID to point to the actual row.
 It allows fast lookups, but changes if the row is updated/moved.
@@ -616,7 +394,7 @@ SELECT department, AVG(salary) FROM employees GROUP BY department HAVING AVG(sal
 ```
 
 # WITH Clause (Common Table Expression - CTE)
-The WITH clause lets you define a temporary result set that you can reference like a table within your query.
+The WITH clause lets we define a temporary result set that we can reference like a table within our query.
 
 It improves readability, especially for complex queries with subqueries or repeated logic.
 
@@ -632,7 +410,7 @@ SELECT name FROM HighEarners;
 # CASE Statement
 The CASE expression works like an IF-ELSE logic block inside SQL queries.
 
-It lets you create new columns or conditions based on custom logic.
+It lets we create new columns or conditions based on custom logic.
 
 You can use it inside SELECT, WHERE, ORDER BY, and even GROUP BY clauses.
 ```sql
@@ -753,33 +531,101 @@ FROM RankedEmployees
 WHERE row_num <= 3;
 ```
 
-A transaction in SQL is a sequence of one or more SQL operations that are treated as a single unit of work. A transaction ensures data integrity by adhering to the ACID properties
 
-BEGIN and COMMIT are SQL commands used to control transactions. They define when a transaction starts and when it should be finalized and saved to the database.    
+# What is a Transaction in SQL?
 
+A transaction is a sequence of one or more SQL statements that are executed as a single unit of work. Transactions ensure data consistency, especially when multiple changes need to either succeed or fail together.
+    Properties of Transactions (ACID)
 
-You can use SAVEPOINT to create intermediate checkpoints in a transaction. This allows you to roll back part of a transaction without discarding everything.
+    Atomicity – All operations in the transaction succeed or none do.
+
+    Consistency – The database is in a valid state before and after the transaction.
+
+    Isolation – Transactions do not interfere with each other.
+
+    Durability – Once committed, changes persist even if the system crashes.
 
 ```sql
-BEGIN;
+BEGIN TRANSACTION;
 
--- Step 1
-INSERT INTO orders (order_id, customer_id) VALUES (1, 101);
+-- SQL statements (INSERT/UPDATE/DELETE)
 
-SAVEPOINT sp1;
+COMMIT; -- Save all changes
 
--- Step 2
-INSERT INTO order_items (order_id, item_id) VALUES (1, 'A123');
+-- OR
 
--- Step 3 (something goes wrong)
--- Let's say this next insert violates a constraint
-INSERT INTO order_items (order_id, item_id) VALUES (1, NULL);
+ROLLBACK; -- Undo all changes if something goes wrong
+```
 
--- Roll back to the last savepoint
-ROLLBACK TO SAVEPOINT sp1;
+We use transactions when:
 
--- Continue from there
-INSERT INTO order_items (order_id, item_id) VALUES (1, 'B456');
+    Multiple related changes must all happen (e.g., transferring money between accounts).
 
+    You want to ensure consistency in case of failure.
+
+    You're dealing with financial, inventory, or sensitive data updates.
+
+    You need to roll back if any part of a multi-step process fails.
+
+Always wrap multiple related write operations in a transaction.
+
+Use ROLLBACK in TRY...CATCH blocks in application code.
+
+Don't use transactions for long SELECT operations — it can block others.
+
+Use isolation levels (like READ COMMITTED, SERIALIZABLE) to control concurrency.
+
+
+When Not to Use Transactions
+
+    For simple SELECTs.
+
+    When auto-commit is sufficient (like in basic inserts).
+
+    When working with read-only operations or reports.
+
+Example Use Case: Insert + Update + Delete with Transaction
+```sql
+BEGIN TRANSACTION;
+
+-- Insert new employee
+INSERT INTO Employee (employee_id, name, department_id, join_date)
+VALUES (200, 'Grace', 2, '2025-05-21');
+
+-- Assign salary
+INSERT INTO Salary (salary_id, employee_id, base_salary, bonus, effective_from)
+VALUES (10, 200, 75000, 3000, '2025-05-21');
+
+-- Assign to project
+INSERT INTO Project (project_id, employee_id, role, project_name)
+VALUES (4, 200, 'Developer', 'New Launch');
+
+COMMIT; -- or ROLLBACK if any insert fails
+```
+
+Imagine we want to give a 10% raise to all employees in a department — but if even one update fails, we want to cancel everything.
+```sql
+BEGIN TRANSACTION;
+UPDATE Salary
+SET base_salary = base_salary * 1.10
+WHERE employee_id IN (
+    SELECT employee_id
+    FROM Employee
+    WHERE department_id = 1
+);
+-- Simulate failure (uncomment this line in real systems to test rollback)
+-- RAISERROR('Simulated error', 16, 1);
+COMMIT;
+-- or ROLLBACK;
+-- Savepoints (Optional Rollback Points)
+
+BEGIN TRANSACTION;
+UPDATE Salary SET bonus = bonus + 1000 WHERE employee_id = 101;
+SAVEPOINT before_second_update;
+UPDATE Salary SET bonus = bonus + 1000 WHERE employee_id = 102;
+-- If this fails:
+ROLLBACK TO before_second_update;
+-- Continue or ROLLBACK everything
 COMMIT;
 ```
+
