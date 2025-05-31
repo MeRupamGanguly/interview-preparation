@@ -1,5 +1,5 @@
 
-# Introduce ourself:
+# Introduce Yourself:
 
 I have Btech in IT, Started my Career at Sensibol as Golang Backend Developer. There my Primary role was Developing REST APIs and Microservices, Business logics, Bug Fixes etc. We use Golang Aws MySql Redis etc. After I joined Calsoft and worked with Extreme Network CLient where my primary role was Bug Fixes, Crate APIs, Write Unit and Functional Test cases, We use Same Golang RabbitMQ, SQL gRPC etc.
 
@@ -23,6 +23,28 @@ Authorization is about granting permission of access or modify specific resource
 # Golang Garbage Collection
 Golang uses automatic garbage collection to manage memory. Developers do not need to allocate or deallocate memory manually, which reduces memory-related errors.
 
+In Go, garbage collection (GC) runs automatically to clean up memory your program no longer uses. However, you can adjust how often it runs to improve performance.
+
+GOGC controls how much the heap (memory) can grow before garbage collection starts.
+
+GOGC=200 → GC runs less often (more memory used, but less CPU work).
+
+GOGC=50 → GC runs more often (less memory used, but more CPU work).
+
+GOGC=off → Disables GC (not recommended unless you know what you're doing).
+
+You can set this in the terminal before running your program
+GOGC=100 Default
+GOGC=200 ./myprogram
+
+If you want to force garbage collection at a specific time, use:
+```go
+import "runtime"
+
+func main() {
+    runtime.GC()
+}
+```
 # Pointer
 A pointer store the memory address of a variable, struct, function, or any data type.
 
