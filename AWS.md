@@ -8,17 +8,15 @@
 - Security: IAM, KMS, Shield, WAF
 
 # Services:
-- A Region is a geographical location where AWS has multiple data centers (Availability Zones). Each region is isolated from others for fault tolerance, latency control.
+- A Region is a geographical location where AWS has multiple data centers (Availability Zones). Each region is isolated from others 
 
-- An Availability Zone (AZ) is one or more physically separate data centers within a region, connected with low-latency links. Each region has 2 or more Availability Zones.
-
-- A Security Group in AWS acts as a stateful virtual firewall that controls both inbound and outbound traffic to EC2 instances and other resources. For example, if I allow incoming traffic on port 80 for HTTP, the outgoing response is automatically allowed — that's what we mean by stateful. I typically use security groups to restrict access to only necessary IP addresses or other AWS services. For instance, I might open port 22 only to my corporate IP for SSH, or restrict a database instance to accept traffic only from the web server’s security group, not from the public internet.
-
-- Amazon Route 53 is AWS’s highly available and scalable DNS service - translating domain names into IP addresses. But beyond basic DNS resolution, Route 53 also integrates tightly with AWS to support advanced routing policies, health checks, and even domain registration. We can chose latency based routing where we can routing to direct users to the nearest AWS region for faster performance. If a web server goes down, Route 53 can automatically remove it from DNS responses, ensuring users are routed only to healthy resources. We can used geolocation routing to direct users from different countries to region-specific content, helping meet compliance and improve localization.
-
-- AWS IAM, or Identity and Access Management, is the core security service that enables you to manage access to AWS resources securely. I use IAM to define who can access what, and under what conditions. For example, I create IAM users for individual team members, groups for roles like DevOps or Developers, and attach policies that define their permissions. I use roles for granting temporary permissions — such as allowing EC2 instances to access S3 buckets, or enabling Lambda to call DynamoDB.
+- An Availability Zone (AZ) is one or more physically separate data centers within a region. Each region has 2 or more Availability Zones.
 
 - Amazon VPC (Virtual Private Cloud) is a logically isolated network within the AWS cloud. We can define our own IP address ranges, create subnets, configure route tables, and attach internet gateways, NAT gateways, and VPN connections.
+
+- A Security Group in AWS acts as a virtual firewall that controls both inbound and outbound traffic to EC2 instances and other resources. For example, if I allow incoming traffic on port 80 for HTTP, the outgoing response is automatically allowed — that's what we mean by stateful. I typically use security groups to restrict access to only necessary IP addresses or other AWS services. For instance, I might open port 22 only to my corporate IP for SSH, or restrict a database instance to accept traffic only from the web server’s security group, not from the public internet.
+
+- AWS IAM, or Identity and Access Management, is the core security service that enables you to manage access to AWS resources securely. I use IAM to define who can access what, and under what conditions. For example, I create IAM users for individual team members, groups for roles like DevOps or Developers, and attach policies that define their permissions. I use roles for granting temporary permissions — such as allowing EC2 instances to access S3 buckets, or enabling Lambda to call DynamoDB.
 
 - Amazon EC2 (Elastic Compute Cloud) is a virtual server that allows users to run applications on AWS’s infrastructure. You can choose the OS, instance type, storage, and networking.
 
@@ -67,6 +65,7 @@ ssh -i my.pem ec2-user@124:23:21:12
 
 # SCP to EC2 instance
 scp -i my.pem user ec2-user@124:23:21:12
+
 
 # S3 Operations
 
@@ -141,7 +140,8 @@ _, err = client.CompleteMultipartUpload(ctx, &s3.CompleteMultipartUploadInput{
 ```
 # Lambda
 Want to trigger the Lambda through an HTTP request so need AWS API Gateway
-
+Lambda doesn’t natively expose an HTTP endpoint. API Gateway acts as the front door, letting users or apps call your Lambda via standard HTTP methods (GET, POST, etc.).
+The handler in an AWS Lambda function is essentially the entry point—the method that gets executed when your function is invoked.
 ```go
 func handler(req events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
     fileName:= request.QueryStringParameters["file"] // Query parameter for file name
@@ -167,6 +167,7 @@ GOOS=linux GOARCH=amd64 go build -o main
 zip function.zip main 
 ```
 
+
 Upload the function.zip file to Lambda Console. 
 
 Set role to allow the Lambda function to access S3. 
@@ -179,46 +180,158 @@ curl "https://xyz12345.execute-api.us-west-2.amazonaws.com/dev/download?file=my-
 
 # SQS
 
-```go
-cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
-client := sqs.NewFromConfig(cfg)
-queueUrl := "https://sqs.us-east-1.amazonaws.com/123456789012/your-queue"
-message := `{"bucket": "your-s3-bucket", "key": "largefile.dat"}`
-_, err = client.SendMessage(ctx, &sqs.SendMessageInput{
-		QueueUrl:    aws.String(queueUrl),
-		MessageBody: aws.String(message),
-	})
-```
+`Amazon SQS Queue Types`
+- Standard Queue handles massive volumes of messages.At-least-once delivery — duplicates may occur. No guaranteed order — messages may arrive out of sequence. Use Cases: Background jobs, real-time data processing, microservice communication.
+- FIFO Queue (First-In-First-Out) Exactly-once delivery — no duplicates. Guaranteed order — messages are processed as sent.Message grouping — groups can be processed in parallel, maintaining order within each. Use Cases: Financial transactions, inventory updates, workflow orchestration.
+
 
 # SNS
 To allow SNS to send messages to the SQS queue, you need to add an SQS Queue Policy that grants sns.amazonaws.com permission to send messages.
-```go
-cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
-sqsClient := sqs.NewFromConfig(cfg)
-// Create the SQS Queue
-	sqsResp, err := sqsClient.CreateQueue(context.TODO(), &sqs.CreateQueueInput{
-		QueueName: aws.String("MyQueue"),
-	})
-snsClient := sns.NewFromConfig(cfg)
-resp, err := snsClient.CreateTopic(context.TODO(), &sns.CreateTopicInput{
-		Name: aws.String("MyTopic"),
-	})
-// Set the Topic ARN (replace with your topic ARN)
-	topicArn := "arn:aws:sns:us-east-1:123456789012:MyTopic"
-// Publish a message to the SNS topic
-	_, err = snsClient.Publish(context.TODO(), &sns.PublishInput{
-		TopicArn: aws.String(topicArn),
-		Message:  aws.String("This is a test message from Go!"),
-	})
-// Set the Topic ARN (replace with your topic ARN)
-	topicArn := "arn:aws:sns:us-east-1:123456789012:MyTopic"
 
-	// Set the SQS Queue ARN (replace with your SQS ARN)
-	sqsQueueArn := "arn:aws:sqs:us-east-1:123456789012:MyQueue"
-// Subscribe the SQS Queue to the SNS Topic
-	_, err = snsClient.Subscribe(context.TODO(), &sns.SubscribeInput{
-		Protocol: aws.String("sqs"),
-		Endpoint: aws.String(sqsQueueArn),
-		TopicArn: aws.String(topicArn),
-	})
+`Two types of topics to suit different messaging needs: `
+- Standard Topic High throughput — supports millions of messages per second. At-least-once delivery — messages may be duplicated. No guaranteed order — messages can arrive out of sequence. Supports multiple protocols — SQS, Lambda, HTTP/S, SMS, email, mobile push. Use Cases: Real-time alerts, fan-out messaging, background processing.
+- FIFO Topic (First-In-First-Out) Strict ordering — messages are delivered exactly as published. Exactly-once delivery — no duplicates. Limited subscriptions — only supports FIFO SQS queues. Lower throughput — up to 300 messages/sec or 10 MB/sec. Use Cases: Financial transactions, inventory updates, workflows needing order.
+
+
+
+```go
+package main
+
+import (
+    "fmt"
+    "net/http"
+    "github.com/aws/aws-sdk-go/aws"
+    "github.com/aws/aws-sdk-go/aws/session"
+    "github.com/aws/aws-sdk-go/service/s3"
+    "github.com/aws/aws-sdk-go/service/sqs"
+)
+
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
+    file, header, _ := r.FormFile("file")
+    defer file.Close()
+
+    sess := session.Must(session.NewSession(&aws.Config{Region: aws.String("us-east-1")}))
+    s3Client := s3.New(sess)
+
+    _, err := s3Client.PutObject(&s3.PutObjectInput{
+        Bucket: aws.String("input-bucket"),
+        Key:    aws.String(header.Filename),
+        Body:   file,
+    })
+    if err != nil {
+        http.Error(w, "S3 upload failed", 500)
+        return
+    }
+
+    sqsClient := sqs.New(sess)
+    _, err = sqsClient.SendMessage(&sqs.SendMessageInput{
+        QueueUrl:    aws.String("https://sqs.us-east-1.amazonaws.com/123456789012/my-queue"),
+        MessageBody: aws.String(fmt.Sprintf(`{"filename":"%s"}`, header.Filename)),
+    })
+    if err != nil {
+        http.Error(w, "SQS send failed", 500)
+        return
+    }
+
+    w.Write([]byte("Upload successful"))
+}
+
+func main() {
+    http.HandleFunc("/upload", uploadHandler)
+    http.ListenAndServe(":8080", nil)
+}
+```
+
+
+```go
+package main
+
+import (
+    "context"
+    "encoding/json"
+    "os/exec"
+    "strings"
+    "github.com/aws/aws-lambda-go/events"
+    "github.com/aws/aws-lambda-go/lambda"
+    "github.com/aws/aws-sdk-go/aws/session"
+    "github.com/aws/aws-sdk-go/service/s3"
+)
+
+type Message struct {
+    Filename string `json:"filename"`
+
+}
+
+func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
+    sess := session.Must(session.NewSession(&aws.Config{Region: aws.String("us-east-1")}))
+    s3Client := s3.New(sess)
+
+    for _, record := range sqsEvent.Records {
+        var msg Message
+        json.Unmarshal([]byte(record.Body), &msg)
+        input := "/tmp/" + msg.Filename
+        // Download from input bucket
+        s3Client.DownloadFile("input-bucket", msg.Filename, input)
+
+        // Convert using FFmpeg
+		base := strings.TrimSuffix(msg.Filename, ".mp3")
+        flac := "/tmp/" + base + ".flac"
+        wav := "/tmp/" + base + ".wav"
+        exec.Command("/opt/bin/ffmpeg", "-i", input, flac).Run()
+        exec.Command("/opt/bin/ffmpeg", "-i", input, wav).Run()
+
+        // Upload to output bucket
+        s3Client.UploadFile("output-bucket", base+".flac", flac)
+        s3Client.UploadFile("output-bucket", base+".wav", wav)
+    }
+	sess := session.Must(session.NewSession())
+    snsClient := sns.New(sess)
+
+    _, err := snsClient.Publish(&sns.PublishInput{
+        TopicArn: aws.String("arn:aws:sns:us-east-1:123456789012:AudioNotify"),
+        Message:  aws.String("Your audio files have been converted and uploaded."),
+        Subject:  aws.String("Audio Conversion Complete"),
+    })
+    return nil
+}
+
+func main() {
+    lambda.Start(handler)
+}
+```
+```go
+// Client
+import (
+    "context"
+    "encoding/json"
+    "github.com/aws/aws-sdk-go-v2/config"
+    "github.com/aws/aws-sdk-go-v2/service/lambda"
+    "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+)
+
+func callLambda(functionName string, payload interface{}) (string, error) {
+    cfg, _ := config.LoadDefaultConfig(context.TODO())
+    client := lambda.NewFromConfig(cfg)
+
+    body, _ := json.Marshal(payload)
+    input := &lambda.InvokeInput{
+        FunctionName:   &functionName,
+        Payload:        body,
+        InvocationType: types.InvocationTypeRequestResponse,
+    }
+
+    result, err := client.Invoke(context.TODO(), input)
+    if err != nil {
+        return "", err
+    }
+
+    return string(result.Payload), nil
+}
+```
+```go
+snsClient.Subscribe(&sns.SubscribeInput{
+  TopicArn: topic.TopicArn,
+  Protocol: aws.String("email"),
+  Endpoint: aws.String("user@example.com"),
+})
 ```
