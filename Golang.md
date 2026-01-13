@@ -2190,6 +2190,247 @@ The strategy pattern allows the client (main function) to select different algor
 Algorithms are encapsulated in their own classes (BubbleSort, QuickSort), adhering to the Single Responsibility Principle.
 Adding new sorting algorithms (MergeSort, InsertionSort, etc.) involves creating new classes that implement SortStrategy.
 
+## Concurent File Write and Read
+```go
+package main
+
+import (
+	"bufio"
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"sync"
+	"time"
+)
+
+// Writer: Appends logs until its work is done
+func tailWriter(file *os.File, id int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for i := 0; i < 200; i++ {
+		_, err := file.WriteString(fmt.Sprintf("Writer %d: log entry %d\n", id, i))
+		if err != nil {
+			fmt.Println("Write error:", err)
+			return
+		}
+		time.Sleep(50 * time.Millisecond)
+		// After each write, it sleeps for 50 milliseconds to mimic real-world logging where entries don’t come instantly.
+	}
+}
+
+// Tail Reader: Monitors new entries until the context is cancelled . This function continuously monitors the file for new log entries until it is told to stop.
+func tailReader(ctx context.Context, file *os.File, name string, id int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	// It uses a buffered reader (bufio.NewReader) and maintains an offset to track how far it has read in the file.
+	// Use a persistent reader and offset tracking
+	reader := bufio.NewReader(file)
+	offset := int64(0)
+
+	for { // Inside an infinite loop, it checks if the context is cancelled. If so, it prints a shutdown message and exits. Otherwise, it seeks to the current offset in the file and tries to read a line.
+		select {
+		case <-ctx.Done():
+			fmt.Printf("Reader %s (%d) received shutdown signal.\n", name, id)
+			return
+		default:
+			// Ensure we are at the right position
+			_, err := file.Seek(offset, io.SeekStart)
+			if err != nil {
+				return
+			}
+			// If a line is read, it prints it with the reader’s name and ID, then updates the offset.
+			line, err := reader.ReadString('\n')
+			if len(line) > 0 {
+				fmt.Printf("[%s Reader %d] %s", name, id, line)
+				offset += int64(len(line))
+				// Reset reader state after seek to ensure next read is fresh
+				reader.Reset(file) // After seeking, the reader resets its buffer to ensure fresh reads.
+			}
+
+			if err == io.EOF { // If it hits io.EOF, meaning no new data is available, it sleeps briefly and retries.
+				// Wait for more data or shutdown signal
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+			if err != nil {
+				fmt.Printf("Reader %s error: %v\n", name, err)
+				return
+			}
+		}
+	}
+}
+
+func main() {
+	logFile := "server.log"
+	// Opens the file for writing with flags: append, write-only, create if not exists, and truncate (start fresh).
+	writeFile, err := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer writeFile.Close()
+
+	// Separate handles for readers to maintain independent offsets. Creates two separate file handles for reading (readFile1 and readFile2). This is important because each reader maintains its own offset independently.
+	readFile1, _ := os.Open(logFile)
+	defer readFile1.Close()
+	readFile2, _ := os.Open(logFile)
+	defer readFile2.Close()
+
+	// Context for managing Reader lifecycles. Sets up a context with cancellation (ctx, cancel := context.WithCancel(...)) to control when readers should stop.
+	ctx, cancel := context.WithCancel(context.Background())
+	// Defines two WaitGroups: one for writers and one for readers.
+	var writerWg sync.WaitGroup
+	var readerWg sync.WaitGroup
+	/*
+		The program launches two writer goroutines.
+
+		    Each writer is added to the writerWg.
+
+		    They run concurrently, writing logs into the same file.
+
+		    This simulates multiple processes writing logs simultaneously.
+	*/
+	// 1. Start Writers
+	for i := 1; i <= 2; i++ {
+		writerWg.Add(1)
+		go tailWriter(writeFile, i, &writerWg)
+	}
+	/*
+		Two reader goroutines are launched.
+
+		    Each reader is added to the readerWg.
+
+		    They monitor the file independently, printing out new log entries as they appear.
+
+		    The names "Alpha" and "Beta" are used to distinguish them.
+
+		This simulates multiple monitoring processes tailing the same log file.
+
+	*/
+	// 2. Start Tail Readers
+	readerWg.Add(1)
+	go tailReader(ctx, readFile1, "Alpha", 1, &readerWg)
+	readerWg.Add(1)
+	go tailReader(ctx, readFile2, "Beta", 2, &readerWg)
+
+	// 3. Wait for writers to finish their work
+	writerWg.Wait()
+	fmt.Println(">>> Writers finished. Waiting 1s for readers to catch up...")
+	time.Sleep(1 * time.Second)
+	/*
+		    The program waits for all writers to finish (writerWg.Wait()).
+
+		    Once writers are done, it prints a message and sleeps for 1 second to give readers time to catch up.
+
+		    Then it calls cancel() to signal the readers to stop.
+
+		    Finally, it waits for all readers to finish (readerWg.Wait()).
+
+		    Prints a clean exit message.
+
+		This ensures that the program exits gracefully, with no dangling goroutines.
+	*/
+	// 4. Signal readers to stop and wait for them
+	cancel()
+	readerWg.Wait()
+	fmt.Println("Main: System exited cleanly.")
+}
+
+```
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"sync"
+	"time"
+)
+
+// Writer: Appends logs with a simulated delay
+func writer(file *os.File, id int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for i := 0; i < 200; i++ { // Reduced count for demonstration
+		_, err := file.WriteString(fmt.Sprintf("Writer %d: log entry %d\n", id, i))
+		if err != nil {
+			fmt.Printf("Writer %d error: %v\n", id, err)
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// Unlike the tailing reader, which continuously monitors new log entries, the snapshot reader captures the entire file state at a single point in time.
+// Snapshot Reader: Loads the current state of the file into memory
+func snapshotReader(name string, delay time.Duration, wg *sync.WaitGroup) {
+	defer wg.Done()
+	time.Sleep(delay)
+
+	// os.ReadFile opens, reads, and closes the file automatically
+	data, err := os.ReadFile("server.log") // After the delay, it uses os.ReadFile to load the entire contents of server.log into memory.
+	if err != nil {
+		fmt.Printf("Reader %s error: %v\n", name, err)
+		return
+	}
+	fmt.Printf("--- Snapshot %s ---\n%s\n-------------------\n", name, string(data))
+}
+
+func main() {
+	// Initialize the file
+	logFile := "server.log"
+	writeFile, err := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer writeFile.Close()
+
+	var wg sync.WaitGroup
+	/*
+		Three writer goroutines are launched:
+
+		    Each is added to the WaitGroup.
+
+		    They run concurrently, appending logs to the same file.
+
+		This simulates multiple processes writing logs simultaneously.
+
+	*/
+	// Start 3 Writers
+	for i := 1; i <= 3; i++ {
+		wg.Add(1)
+		go writer(writeFile, i, &wg)
+	}
+	/*
+		Four snapshot readers are launched:
+
+		    Two short-term readers with delays of 100ms and 300ms.
+
+		    Two long-term readers with delays of 5s and 15s.
+
+		    Each is added to the WaitGroup.
+
+		This means snapshots are taken at different points in time, showing how the file grows as writers continue to append logs.
+	*/
+	// Start 2 Snapshot Readers at different intervals
+	wg.Add(1)
+	go snapshotReader("Short-Term", 100*time.Millisecond, &wg)
+	wg.Add(1)
+	go snapshotReader("Long-Term", 300*time.Millisecond, &wg)
+	// Start 2 Snapshot Readers at different intervals
+	wg.Add(1)
+	go snapshotReader("Short-Term", 5*time.Second, &wg)
+	wg.Add(1)
+	go snapshotReader("Long-Term", 15*time.Second, &wg)
+	/*
+		    The program waits for all goroutines (wg.Wait()).
+
+		    Once all writers and readers finish, it prints a final message: "All writers and snapshot readers complete."
+
+		This ensures a clean exit after all concurrent work is done.
+	*/
+	wg.Wait()
+	fmt.Println("All writers and snapshot readers complete.")
+}
+
+```
 
 # Status Code
 
@@ -2226,3 +2467,5 @@ Adding new sorting algorithms (MergeSort, InsertionSort, etc.) involves creating
 			505 HTTP Version Not Supported: The server does not support the HTTP protocol version that was used in the request.
 
 			511 Network Authentication Required: The client needs to authenticate to gain network access.
+
+In HTTP, PUT replaces the entire resource with the new data, while PATCH applies partial updates to only the specified fields. PUT is always idempotent (repeating the same request has the same effect), whereas PATCH may not be idempotent depending on implementation
