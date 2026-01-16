@@ -74,7 +74,14 @@ In context switching, imagine multiple tasks need to run at the same time. The G
 
 Go-Routines have a dynamic stack size and are managed by the Go-Runtime. Threads have a fixed-size stack and are managed by the OS kernel. This dynamic growth of Stack ensures that memory is used efficiently. As a result, thousands or even millions of Go-Routines can be created and run concurrently with minimal memory overhead. This fixed size stack means that even if the thread doesn’t need all that memory, the space is reserved. As a result, threads consume more memory, which limits how many threads can run concurrently on a system.
 
-The Go scheduler is responsible for deciding when and on which OS-Thread each Go-Routine runs.
+- Go Runtime is the component that manages Scheduler, Garbage Collection, Concurrency, 
+
+- Go Scheduler is a component inside the Go runtime. The Go scheduler is responsible for deciding when and on which OS-Thread each Go-Routine runs.
+
+- A Logical-processor is the Go scheduler’s unit that manages a queue of goroutines and maps them onto OS threads.
+
+The runtime is the engine, the scheduler is the traffic controller, and the logical processor is the lane where goroutines wait to run.
+
 
 When we start a Go-Routine using the `go` keyword, the Go-Runtime adds it to a Run-Queue. This Run-Queue is managed by a special component called a Logical-Processor. The Logical-Processor holds the queue of Go-Routines, manages their state, and helps with scheduling and garbage collection.
 
@@ -175,6 +182,37 @@ func main() {
 	fmt.Println("DONE---------")
 }
 ```
+flowchart TD
+    subgraph Scheduler
+        RunQueue["📥 Run-Queue\n(Goroutines waiting to run)"]
+    end
+
+    subgraph LogicalProcessor["🧩 Logical Processor (P)"]
+        PQueue["🌀 Picks Goroutine from Run-Queue"]
+        Running["🚀 Running State"]
+        Preempted["⏸️ Preempted"]
+        Yielded["🤝 Yielded"]
+        Blocked["🚧 Blocked (I/O, channel, syscall)"]
+        Waiting["🕒 Waiting State"]
+    end
+
+    subgraph OSThreads["🧵 OS Threads (M)"]
+        Thread1["🧵 OS Thread 1"]
+        Thread2["🧵 OS Thread 2"]
+    end
+
+    RunQueue --> PQueue
+    PQueue --> Running
+    Running --> Preempted
+    Running --> Yielded
+    Running --> Blocked
+    Blocked --> Waiting
+    Waiting --> RunQueue
+
+    PQueue --> Thread1
+    PQueue --> Thread2
+    Blocked -. Detach Thread .-> Thread1
+    Waiting -. Reassign Thread .-> Thread2
 
 # Closure in golang:
 A closure is a special type of anonymous function that can access/use variables, that declared outside of the function. Closures treat functions as values, allowing us to assign functions to variables, pass functions as arguments, and return functions from other functions.
