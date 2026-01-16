@@ -182,37 +182,8 @@ func main() {
 	fmt.Println("DONE---------")
 }
 ```
-flowchart TD
-    subgraph Scheduler
-        RunQueue["📥 Run-Queue\n(Goroutines waiting to run)"]
-    end
-
-    subgraph LogicalProcessor["🧩 Logical Processor (P)"]
-        PQueue["🌀 Picks Goroutine from Run-Queue"]
-        Running["🚀 Running State"]
-        Preempted["⏸️ Preempted"]
-        Yielded["🤝 Yielded"]
-        Blocked["🚧 Blocked (I/O, channel, syscall)"]
-        Waiting["🕒 Waiting State"]
-    end
-
-    subgraph OSThreads["🧵 OS Threads (M)"]
-        Thread1["🧵 OS Thread 1"]
-        Thread2["🧵 OS Thread 2"]
-    end
-
-    RunQueue --> PQueue
-    PQueue --> Running
-    Running --> Preempted
-    Running --> Yielded
-    Running --> Blocked
-    Blocked --> Waiting
-    Waiting --> RunQueue
-
-    PQueue --> Thread1
-    PQueue --> Thread2
-    Blocked -. Detach Thread .-> Thread1
-    Waiting -. Reassign Thread .-> Thread2
+<img width="1024" height="1024" alt="Image" src="https://github.com/user-attachments/assets/6d6ac1ab-adfb-4cda-a507-9079c742444f" />
+<img width="1024" height="1024" alt="Image" src="https://github.com/user-attachments/assets/e649157f-3bd3-41f4-8fba-8938f43ca6ee" />
 
 # Closure in golang:
 A closure is a special type of anonymous function that can access/use variables, that declared outside of the function. Closures treat functions as values, allowing us to assign functions to variables, pass functions as arguments, and return functions from other functions.
